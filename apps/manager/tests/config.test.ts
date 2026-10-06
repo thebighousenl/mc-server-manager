@@ -31,17 +31,19 @@ describe('loadConfig cluster settings', () => {
     expect(c.ports).toEqual({ min: 19132, max: 19999 })
     expect(c.pollMs).toBe(3000)
     expect(c.exports).toEqual({ size: '20Gi', storageClass: 'local-path' })
+    expect(c.publicHost).toBe('127.0.0.1')
   })
 
   it('passes overrides through', () => {
     const c = load({
       MC_NAMESPACE: 'mc', KUBE_CONTEXT: 'ctx', KUBECONFIG: '/k', KUBECTL_BIN: '/bin/k',
-      MC_PORT_MIN: '20000', MC_PORT_MAX: '20010', MC_POLL_MS: '500', MC_EXPORTS_SIZE: '1500Mi', MC_EXPORTS_STORAGE_CLASS: 'fast',
+      MC_PORT_MIN: '20000', MC_PORT_MAX: '20010', MC_POLL_MS: '500', MC_EXPORTS_SIZE: '1500Mi', MC_EXPORTS_STORAGE_CLASS: 'fast', MC_PUBLIC_HOST: 'mc.example.org',
     })
     expect(c.kube).toEqual({ namespace: 'mc', context: 'ctx', kubeconfig: '/k', bin: '/bin/k' })
     expect(c.ports).toEqual({ min: 20000, max: 20010 })
     expect(c.pollMs).toBe(500)
     expect(c.exports).toEqual({ size: '1500Mi', storageClass: 'fast' })
+    expect(c.publicHost).toBe('mc.example.org')
   })
 
   it.each([

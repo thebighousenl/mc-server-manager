@@ -5,6 +5,7 @@ export interface Config {
   kube: { namespace: string, context?: string, kubeconfig?: string, bin: string }
   ports: { min: number, max: number }
   pollMs: number
+  publicHost: string // node address used for the outside reachability check
   exports: { size: string, storageClass: string }
 }
 
@@ -45,6 +46,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
       bin: env.KUBECTL_BIN || 'kubectl',
     },
     ports: { min, max },
+    publicHost: env.MC_PUBLIC_HOST || '127.0.0.1',
     pollMs: intVar(env, 'MC_POLL_MS', 3000, 500, Infinity),
     exports: { size, storageClass: env.MC_EXPORTS_STORAGE_CLASS || 'local-path' },
   }
