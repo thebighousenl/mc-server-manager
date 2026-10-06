@@ -5,6 +5,15 @@ export default defineNuxtConfig({
   runtimeConfig: {
     managerUrl: '',
     managerSecret: '',
+    // Server-only auth settings; overridden by NUXT_AUTH_USERS, NUXT_AUTH_IDLE_TIMEOUT_MS, etc.
+    auth: {
+      users: '', // JSON string: [{ "username": "...", "passwordHash": "scrypt$..." }]
+      idleTimeoutMs: 1800000,
+      maxLifetimeMs: 43200000,
+      maxFailures: 5,
+      lockoutMs: 300000,
+      trustProxy: false,
+    },
   },
   compatibilityDate: '2026-01-01',
 })
