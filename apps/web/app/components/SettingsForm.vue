@@ -6,6 +6,7 @@ interface Setting { key: string, value: string, editable: boolean }
 const intIn = (min: number, max: number) => (v: string) => /^\d{1,4}$/.test(v) && +v >= min && +v <= max
 const oneOf = (...values: string[]) => (v: string) => values.includes(v)
 const bool = oneOf('true', 'false')
+// eslint-disable-next-line no-control-regex
 const text = (max: number) => (v: string) => v.length >= 1 && v.length <= max && !/[\x00-\x1f\x7f]/.test(v)
 const RULES: Record<string, [(v: string) => boolean, string]> = {
   SERVER_NAME: [text(64), '1-64 characters'],
@@ -75,7 +76,7 @@ async function confirm() {
   <div>
     <div v-for="s in settings" :key="s.key" class="mb-2 grid grid-cols-3 items-center gap-2 text-sm">
       <label :for="`setting-${s.key}`" class="font-mono">{{ s.key }}</label>
-      <UInput v-if="s.editable" v-model="values[s.key]" :data-testid="`setting-${s.key}`" :id="`setting-${s.key}`" class="col-span-2" />
+      <UInput v-if="s.editable" :id="`setting-${s.key}`" v-model="values[s.key]" :data-testid="`setting-${s.key}`" class="col-span-2" />
       <span v-else class="col-span-2 text-muted">{{ s.value }}</span>
     </div>
     <UAlert v-for="e in errors" :key="e" class="mt-2" color="error" variant="subtle" :title="e" />
