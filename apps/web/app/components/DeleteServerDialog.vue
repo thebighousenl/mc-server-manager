@@ -7,7 +7,7 @@ async function remove() {
   confirming.value = false
   error.value = ''
   try {
-    await $fetch(`/api/servers/${props.name}`, { method: 'DELETE', body: { confirmName: props.name } })
+    await $fetch<unknown>(`/api/servers/${props.name}`, { method: 'DELETE', body: { confirmName: props.name } })
     await navigateTo('/servers')
   }
   catch (e) {
