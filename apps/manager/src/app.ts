@@ -5,6 +5,8 @@ import type { Kubectl } from './kube/kubectl.js'
 import { healthRoutes } from './routes/health.js'
 import { adoptRoutes } from './routes/adopt.js'
 import { eventsRoutes } from './routes/events.js'
+import { lifecycleRoutes } from './routes/lifecycle.js'
+import { logsRoutes } from './routes/logs.js'
 import { serverRoutes } from './routes/servers.js'
 import { listServers } from './servers/list.js'
 import { createPoller } from './servers/poller.js'
@@ -29,5 +31,7 @@ export function buildApp(config: Config & { logLevel?: string, logStream?: { wri
   eventsRoutes(app, createPoller(() => listServers(deps.kubectl), config.pollMs))
   serverRoutes(app, deps)
   adoptRoutes(app, deps)
+  lifecycleRoutes(app, deps)
+  logsRoutes(app, deps)
   return app
 }

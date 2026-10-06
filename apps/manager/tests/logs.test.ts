@@ -20,18 +20,15 @@ function setup() {
   const spawned: { args: string[], stdout: PassThrough, killed: boolean }[] = []
   const kubectl = Object.assign(base, {
     spawn(args: string[]) {
-      const child = Object.assign(new EventEmitter(), {
-        stdout: new PassThrough(),
-        stderr: new PassThrough(),
-        killed: false,
+      const rec = { args, stdout: new PassThrough(), killed: false }
+      spawned.push(rec)
+      return Object.assign(new EventEmitter(), {
+        stdout: rec.stdout,
         kill() {
-          child.killed = true
-          spawned.find(s => s.stdout === child.stdout)!.killed = true
+          rec.killed = true
           return true
         },
-      })
-      spawned.push({ args, stdout: child.stdout, get killed() { return child.killed } } as never)
-      return child as never
+      }) as never
     },
   })
   return { kubectl, spawned }
