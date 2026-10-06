@@ -26,12 +26,21 @@ describe('isPublic', () => {
     ['GET', '/api/auth/login', false],
     ['POST', '/api/health', false],
     ['GET', '/api/auth/me', false],
-    ['POST', '/api/auth/logout', false],
+    ['POST', '/api/auth/logout', true],
+    ['GET', '/api/auth/logout', false],
     ['GET', '/api/servers', false],
     ['GET', '/api', false],
     ['GET', '/apix', true],
   ])('%s %s -> %s', (method, path, expected) => {
     expect(isPublic(path, method)).toBe(expected)
+  })
+
+  it.each([
+    '//api/auth/me', '/%61pi/auth/me', '/%2e/api/auth/me', '/api/../api/auth/me', '/./api/servers',
+    '///api/servers', '/API/servers', '/api%2Fservers', '/\\api/servers', '/api/auth/me/', '/api/health/../servers',
+    '//api/health', '/x/../api/servers',
+  ])('odd path %s is not public', (path) => {
+    expect(isPublic(path, 'GET')).toBe(false)
   })
 
   it('ignores a query string and a trailing slash trick', () => {
@@ -102,5 +111,17 @@ describe('authorize', () => {
     const { deps } = testDeps()
     const r = authorize({ ...base, path: '/api/auth/login', method: 'POST', origin: 'https://evil.example' }, deps)
     expect(r).toMatchObject({ ok: false, status: 403 })
+  })
+
+  it('logout is public even with an expired or missing session (origin still checked)', () => {
+    const { deps } = testDeps()
+    const logoutReq = { ...base, path: '/api/auth/logout', method: 'POST', token: 'stale' }
+    expect(authorize({ ...logoutReq, origin: 'https://app.example' }, deps)).toEqual({ ok: true })
+    expect(authorize({ ...logoutReq, origin: undefined }, deps)).toMatchObject({ ok: false, status: 403 })
+  })
+
+  it('public POST without Origin is 403', () => {
+    const { deps } = testDeps()
+    expect(authorize({ ...base, path: '/api/auth/login', method: 'POST' }, deps)).toMatchObject({ ok: false, status: 403 })
   })
 })

@@ -55,7 +55,8 @@ export function parseUsers(json: string): Operator[] {
   for (const u of raw) {
     const { username, passwordHash } = (u ?? {}) as Record<string, unknown>
     if (typeof username !== 'string' || username.length < 1 || username.length > 64 || !isHash(passwordHash)) continue
-    users.push({ username: username.toLowerCase(), passwordHash })
+    const name = username.toLowerCase()
+    if (!users.some(x => x.username === name)) users.push({ username: name, passwordHash }) // first wins
   }
   return users
 }

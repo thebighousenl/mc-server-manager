@@ -40,6 +40,14 @@ describe('sessions', () => {
     expect(getSession(token, deps)).toBeUndefined()
   })
 
+  it('sweeps abandoned expired sessions when a new one is created', () => {
+    const { deps, clock } = testDeps({ idleTimeoutMs: 1000 })
+    const old = createSession('alice', deps)
+    clock.advance(1001)
+    createSession('bob', deps)
+    expect(getSession(old, deps)).toBeUndefined() // swept, not reported as expired
+  })
+
   it('unknown token -> undefined', () => {
     const { deps } = testDeps()
     expect(getSession('nope', deps)).toBeUndefined()

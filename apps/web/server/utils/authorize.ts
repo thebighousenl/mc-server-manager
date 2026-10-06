@@ -5,13 +5,35 @@ import { getSession } from './sessions'
 
 export type AuthorizeResult = { ok: true, username?: string } | { ok: false, status: 401 | 403, message: string }
 
-// Anything that is not clearly outside /api (e.g. "/apix") is treated as an API path: fail closed.
-const isApi = (path: string) => /^\/api(?![A-Za-z0-9_-])/i.test(path)
+// Resolve encodings, backslashes, repeated slashes and dot segments so odd spellings of /api/... are still seen as API.
+function normalize(rawPath: string): string | undefined {
+  let p = rawPath.split(/[?#]/)[0]!
+  try {
+    for (let i = 0; i < 3 && /%/.test(p); i++) p = decodeURIComponent(p)
+  }
+  catch {
+    return undefined
+  }
+  const segs: string[] = []
+  for (const seg of p.replace(/\\/g, '/').split('/')) {
+    if (seg === '..') segs.pop()
+    else if (seg && seg !== '.') segs.push(seg)
+  }
+  return `/${segs.join('/')}`
+}
 
+// Undecodable paths and anything that looks like /api (e.g. "/apix" does not) are treated as API: fail closed.
+const isApi = (path: string) => {
+  const n = normalize(path)
+  return n === undefined || /^\/api(?![A-Za-z0-9_-])/i.test(n) || /^\/api(?![A-Za-z0-9_-])/i.test(path)
+}
+
+// Public API routes must match literally; only paths that are clearly not /api are public otherwise.
 export function isPublic(rawPath: string, method: string): boolean {
   const path = rawPath.split('?')[0]!
   if (!isApi(path)) return true
-  return (method === 'POST' && path === '/api/auth/login') || (method === 'GET' && path === '/api/health')
+  return (method === 'POST' && (path === '/api/auth/login' || path === '/api/auth/logout'))
+    || (method === 'GET' && path === '/api/health')
 }
 
 function originMatches(origin: string | undefined, host: string): boolean {

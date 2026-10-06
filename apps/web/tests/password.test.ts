@@ -55,6 +55,15 @@ describe('parseUsers', () => {
     expect(parseUsers(json).map(u => u.username)).toEqual(['ok'])
   })
 
+  it('keeps only the first of duplicate or case-variant usernames', () => {
+    const other = testUsers().passwordHash.replace('6+Fd', '7+Fd')
+    const json = JSON.stringify([
+      { username: 'Alice', passwordHash },
+      { username: 'alice', passwordHash: other },
+    ])
+    expect(parseUsers(json)).toEqual([{ username: 'alice', passwordHash }])
+  })
+
   it.each(['', 'not json', '{}', '"str"', 'null'])('%j -> []', (input) => {
     expect(parseUsers(input)).toEqual([])
   })

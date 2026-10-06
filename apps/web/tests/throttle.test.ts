@@ -44,6 +44,25 @@ describe('throttle', () => {
     expect(t.isLocked('user:alice', deps)).toBe(false)
   })
 
+  it('lockout lasts a full lockoutMs from the locking failure', () => {
+    const { deps, clock } = testDeps({ lockoutMs: 10_000 })
+    for (let i = 0; i < 4; i++) t.recordFailure('user:alice', deps)
+    clock.advance(9_000)
+    t.recordFailure('user:alice', deps) // locks now
+    clock.advance(9_999)
+    expect(t.isLocked('user:alice', deps)).toBe(true)
+    clock.advance(2)
+    expect(t.isLocked('user:alice', deps)).toBe(false)
+  })
+
+  it('sweeps expired entries when new failures are recorded', () => {
+    const { deps, clock } = testDeps({ lockoutMs: 10_000 })
+    t.recordFailure('user:old', deps)
+    clock.advance(20_001)
+    t.recordFailure('user:new', deps)
+    expect(t.size()).toBe(1)
+  })
+
   it('recordSuccess clears the key', () => {
     const { deps } = testDeps()
     for (let i = 0; i < 4; i++) t.recordFailure('user:alice', deps)
