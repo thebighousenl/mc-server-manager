@@ -8,6 +8,7 @@ const { servers, clusterOk, error, loaded } = useServers()
       <h1 class="text-2xl font-bold">Servers</h1>
       <div class="flex gap-2">
         <UButton to="/servers/new" data-testid="new-server">New server</UButton>
+        <UButton to="/exports" data-testid="exports-link" color="neutral" variant="outline">Exports</UButton>
         <UButton to="/" color="neutral" variant="outline">Home</UButton>
       </div>
     </div>

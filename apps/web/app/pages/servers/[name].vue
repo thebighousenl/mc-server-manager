@@ -21,6 +21,7 @@ const server = computed(() => servers.value.find(s => s.name === name))
         <UButton data-testid="tab-console" size="sm" :variant="tab === 'console' ? 'solid' : 'outline'" @click="tab = 'console'">Console</UButton>
         <UButton data-testid="tab-settings" size="sm" :variant="tab === 'settings' ? 'solid' : 'outline'" @click="tab = 'settings'">Settings</UButton>
       </div>
+      <DeleteServerDialog v-if="server.managed" :name="name" :protected="server.protected" />
       <LogPanel v-if="tab === 'overview'" :name="name" />
       <SettingsForm v-else-if="tab === 'settings'" :name="name" />
       <template v-else>
