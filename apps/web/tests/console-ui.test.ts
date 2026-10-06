@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { createError } from 'h3'
+import { UInput } from '#components'
 import ConsolePanel from '../app/components/ConsolePanel.vue'
 import PlayerList from '../app/components/PlayerList.vue'
 
@@ -11,7 +11,7 @@ registerEndpoint('/api/servers/zz/command', {
   handler: async (event) => {
     const body = await (event as unknown as { web: { request: Request } }).web.request.json()
     bodies.push(body)
-    if (notReady) throw createError({ statusCode: 422, data: { error: 'not_ready', message: 'server not ready' } })
+    if (notReady) return Response.json({ error: 'not_ready', message: 'server not ready' }, { status: 422 })
     return { command: body.command, lines: ['[t INFO] Set the time to 0'], truncated: false }
   },
 })
@@ -22,7 +22,7 @@ beforeEach(() => {
 })
 
 const send = async (wrapper: Awaited<ReturnType<typeof mountSuspended>>, command: string) => {
-  await wrapper.find('input').setValue(command)
+  await wrapper.findComponent(UInput).setValue(command) // bypasses the native input, which would strip newlines
   await wrapper.find('form').trigger('submit')
 }
 

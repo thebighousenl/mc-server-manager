@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const name = String(useRoute().params.name)
 const { servers, clusterOk, error, loaded } = useServers()
+const tab = ref<'overview' | 'console'>('overview')
 const server = computed(() => servers.value.find(s => s.name === name))
 </script>
 
@@ -15,7 +16,18 @@ const server = computed(() => servers.value.find(s => s.name === name))
     <div v-else-if="server" class="space-y-4">
       <UBadge data-testid="state-badge" variant="subtle">{{ server.state }}</UBadge>
       <LifecycleControls :name="name" :state="server.state" />
-      <LogPanel :name="name" />
+      <div class="flex gap-2">
+        <UButton data-testid="tab-overview" size="sm" :variant="tab === 'overview' ? 'solid' : 'outline'" @click="tab = 'overview'">Overview</UButton>
+        <UButton data-testid="tab-console" size="sm" :variant="tab === 'console' ? 'solid' : 'outline'" @click="tab = 'console'">Console</UButton>
+      </div>
+      <LogPanel v-if="tab === 'overview'" :name="name" />
+      <template v-else>
+        <p v-if="server.state !== 'running'" class="text-sm text-muted">The console is available while the server is running.</p>
+        <template v-else>
+          <ConsolePanel :name="name" />
+          <PlayerList :name="name" />
+        </template>
+      </template>
     </div>
   </UContainer>
 </template>
