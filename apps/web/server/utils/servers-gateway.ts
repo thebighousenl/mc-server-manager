@@ -63,7 +63,11 @@ export async function forward(req: GatewayRequest, deps: GatewayDeps): Promise<R
     return json(502, { error: err instanceof ManagerMisconfigured ? 'misconfigured' : 'unavailable' })
   }
   // 401 from the manager means our shared secret is wrong: never show that to the browser as a logout.
-  if (res.status >= 500 || res.status === 401) return json(502, { error: 'unavailable' })
+  if (res.status >= 500 || res.status === 401) {
+    // The manager's own 502 carries a fixed kubectl/cluster text (never stderr), so the operator can see what failed.
+    const message = res.status === 502 ? (await res.json().catch(() => null))?.message : undefined
+    return json(502, typeof message === 'string' ? { error: 'unavailable', message } : { error: 'unavailable' })
+  }
 
   const out = new Headers()
   for (const h of RESPONSE_HEADERS) if (res.headers.has(h)) out.set(h, res.headers.get(h)!)

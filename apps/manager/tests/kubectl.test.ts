@@ -16,7 +16,7 @@ function fakeExec(reply: () => { err?: unknown, stdout?: string, stderr?: string
     calls.push(call)
     const r = reply()
     queueMicrotask(() => cb(r.err ?? null, r.stdout ?? '', r.stderr ?? ''))
-    return { stdin: { end: (s: string) => call.stdin.push(s) } }
+    return { stdin: { on: () => {}, end: (s: string) => call.stdin.push(s) } }
   }) as never
   return { calls, impl }
 }
