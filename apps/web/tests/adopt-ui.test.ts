@@ -1,7 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { readBody } from 'h3'
 import ServerCard from '../app/components/ServerCard.vue'
 
 const server = (over = {}) => ({
@@ -13,7 +11,7 @@ let bodies: unknown[]
 registerEndpoint('/api/servers/zz/adopt', {
   method: 'POST',
   handler: async (event) => {
-    const body = await readBody(event)
+    const body = await (event as unknown as { web: { request: Request } }).web.request.json()
     bodies.push(body)
     return body.confirm ? { ...plan, changed: true } : plan
   },
@@ -24,19 +22,17 @@ describe('adopt UI', () => {
   it('shows the plan first, and only adopts after confirming', async () => {
     const wrapper = await mountSuspended(ServerCard, { props: { server: server() } })
     await wrapper.find('[data-testid="adopt"]').trigger('click')
-    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('mc-manager/managed=true'))
     expect(bodies).toEqual([{ confirm: false }])
-    expect(wrapper.text()).toContain('mc-manager/managed=true')
     await wrapper.find('[data-testid="confirm"]').trigger('click')
-    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.find('[role="dialog"]').exists()).toBe(false))
     expect(bodies).toEqual([{ confirm: false }, { confirm: true }])
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
   })
 
   it('cancel makes no adopt call', async () => {
     const wrapper = await mountSuspended(ServerCard, { props: { server: server() } })
     await wrapper.find('[data-testid="adopt"]').trigger('click')
-    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.find('[data-testid="cancel"]').exists()).toBe(true))
     await wrapper.find('[data-testid="cancel"]').trigger('click')
     expect(bodies).toEqual([{ confirm: false }])
   })

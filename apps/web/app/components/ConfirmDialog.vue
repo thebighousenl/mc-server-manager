@@ -10,7 +10,7 @@ const blocked = computed(() => props.requireText !== undefined && typed.value !=
     <template #header>
       <h2 class="text-lg font-semibold">{{ title }}</h2>
     </template>
-    <p>{{ body }}</p>
+    <p class="whitespace-pre-line">{{ body }}</p>
     <UAlert v-for="w in warnings" :key="w" class="mt-2" color="warning" variant="subtle" :title="w" />
     <UInput v-if="requireText !== undefined" v-model="typed" class="mt-2 w-full" :placeholder="`Type ${requireText} to confirm`" />
     <template #footer>
