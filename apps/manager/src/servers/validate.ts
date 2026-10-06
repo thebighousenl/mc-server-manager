@@ -27,7 +27,7 @@ const text = (max: number) => (v: string) => v.length >= 1 && v.length <= max &&
 // Allow-list of editable settings (data-model.md, ServerSettings). Everything else is read-only.
 const RULES: Record<string, (v: string) => boolean> = {
   SERVER_NAME: text(64),
-  LEVEL_NAME: v => /^[A-Za-z0-9 _.-]{1,64}$/.test(v),
+  LEVEL_NAME: v => /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}$/.test(v),
   GAMEMODE: oneOf('survival', 'creative', 'adventure'),
   DIFFICULTY: oneOf('peaceful', 'easy', 'normal', 'hard'),
   MAX_PLAYERS: intIn(1, 200),

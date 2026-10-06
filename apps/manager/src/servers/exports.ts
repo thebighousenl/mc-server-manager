@@ -21,6 +21,7 @@ export interface ExportDeps {
 
 const EXPORTS = 'mc-exports'
 const IMAGE = 'busybox:1.37'
+const NO_WORLD = 'no-world'
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 const create = (kubectl: Kubectl, obj: object) => kubectl.run(['create', '-f', '-'], { stdin: JSON.stringify(obj) })
 const exists = async (kubectl: Kubectl, ref: string) => (await kubectl.run(['get', ref, '--ignore-not-found', '-o', 'name'])).stdout.trim() !== ''
@@ -59,7 +60,8 @@ export async function ensureExportsVolume({ kubectl, exports }: ExportDeps) {
 }
 
 // The caller holds the server lock. Stopped servers only, so the copy is consistent.
-export async function exportWorld(deps: ExportDeps, name: string, level: string, operator: string): Promise<string> {
+// Returns null when the server never created the world (it never ran), so there is nothing to export.
+export async function exportWorld(deps: ExportDeps, name: string, level: string, operator: string): Promise<string | null> {
   const { kubectl, logger, timeoutMs = 600_000, pollMs = 2000 } = deps
   const log = (outcome: string, detail?: string) => logAction(logger, { operator, server: name, action: 'export', outcome, detail })
   try {
@@ -85,7 +87,8 @@ export async function exportWorld(deps: ExportDeps, name: string, level: string,
             containers: [{
               name: 'export',
               image: IMAGE,
-              command: ['tar', 'czf', `/exports/${file}`, '-C', '/data/worlds', level],
+              // Level and file are positional arguments, and `--` keeps a level name from being read as a tar option.
+              command: ['sh', '-c', `[ -d "/data/worlds/$2" ] || { echo ${NO_WORLD}; exit 0; }; tar czf "/exports/$1" -C /data/worlds -- "$2"`, 'export', file, level],
               volumeMounts: [{ name: 'data', mountPath: '/data', readOnly: true }, { name: 'exports', mountPath: '/exports' }],
             }],
             volumes: [
@@ -104,9 +107,10 @@ export async function exportWorld(deps: ExportDeps, name: string, level: string,
       if (Date.now() > deadline) throw new ExportError(409, `exporting ${level} timed out`)
       await sleep(pollMs)
     }
+    const skipped = (await kubectl.run(['logs', `job/${job}`])).stdout.includes(NO_WORLD)
     await kubectl.run(['delete', `job/${job}`]).catch(() => {}) // the file stays; only the finished Job goes
-    log('ok', file)
-    return file
+    log('ok', skipped ? 'no world to export' : file)
+    return skipped ? null : file
   }
   catch (err) {
     log('failed', (err as Error).message)

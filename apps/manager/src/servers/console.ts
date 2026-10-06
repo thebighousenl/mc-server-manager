@@ -15,6 +15,7 @@ export interface ConsoleDeps {
   logger: { info: (obj: object, msg?: string) => void }
   timeoutMs?: number // SC-006: answer within 2 s
   pollMs?: number
+  settleMs?: number // extra wait after the first answer so a multi-line reply is complete
 }
 export interface ConsoleResult { command: string, lines: string[], truncated: boolean }
 export interface Players { online: number, max: number, players: string[] }
@@ -24,18 +25,25 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 const strip = (line: string) => line.replace(/^\[[^\]]*\]\s?/, '')
 
 async function exec(deps: ConsoleDeps, name: string, command: string, done: (lines: string[]) => boolean): Promise<ConsoleResult> {
-  const { kubectl, timeoutMs = 2000, pollMs = 200 } = deps
+  const { kubectl, timeoutMs = 2000, pollMs = 200, settleMs = 150 } = deps
   const server = await getServer(kubectl, name)
   if (!server) throw new ConsoleError(404, 'unknown server')
   if (server.state !== 'running') throw new ConsoleError(422, 'server not ready')
-  const since = new Date().toISOString()
+  // The kubelet's clock may differ from ours, so start a little early rather than miss the reply.
+  const since = new Date(Date.now() - 1000).toISOString()
   // Each word is its own argument: no shell is involved anywhere.
   await kubectl.run(['exec', `deploy/${names(name).deployment}`, '--', 'send-command', ...command.split(/\s+/)])
   const deadline = Date.now() + timeoutMs
+  const read = async () => (await kubectl.run(['logs', `deploy/${names(name).deployment}`, `--since-time=${since}`])).stdout.split('\n').filter(l => l.trim())
+  const result = (lines: string[]) => ({ command, lines: lines.slice(0, MAX_LINES), truncated: lines.length > MAX_LINES })
   for (;;) {
-    const { stdout } = await kubectl.run(['logs', `deploy/${names(name).deployment}`, `--since-time=${since}`])
-    const lines = stdout.split('\n').filter(l => l.trim())
-    if (done(lines) || Date.now() >= deadline) return { command, lines: lines.slice(0, MAX_LINES), truncated: lines.length > MAX_LINES }
+    let lines = await read()
+    if (done(lines)) {
+      await sleep(settleMs)
+      lines = await read()
+      return result(lines)
+    }
+    if (Date.now() >= deadline) return result(lines)
     await sleep(pollMs)
   }
 }

@@ -35,7 +35,7 @@ describe('validateSettings', () => {
   it.each([
     ['GAMEMODE', 'hardcore'], ['MAX_PLAYERS', '0'], ['MAX_PLAYERS', '201'], ['MAX_PLAYERS', 'ten'], ['ALLOW_CHEATS', 'yes'],
     ['ALLOW_LIST_USERS', 'Steve'], ['ALLOW_LIST_USERS', 'Steve:abc'], ['OPS', 'steve'], ['VERSION', 'latest'], ['VERSION', '1.21'],
-    ['LEVEL_NAME', '../x'], ['LEVEL_NAME', ''], ['SERVER_NAME', ''], ['SERVER_NAME', 'a\nb'], ['SERVER_NAME', 'x'.repeat(65)],
+    ['LEVEL_NAME', '../x'], ['LEVEL_NAME', '..'], ['LEVEL_NAME', '-x'], ['LEVEL_NAME', '.hidden'], ['LEVEL_NAME', ''], ['SERVER_NAME', ''], ['SERVER_NAME', 'a\nb'], ['SERVER_NAME', 'x'.repeat(65)],
     ['DIFFICULTY', 'impossible'], ['MAX_PLAYERS', 20],
   ])('rejects %s=%j', (k, v) => {
     expect(validateSettings({ [k]: v }, 'update')).toMatchObject(bad)

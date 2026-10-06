@@ -43,7 +43,7 @@ export function deleteServer(deps: DeleteDeps, name: string, o: DeleteInput): Pr
       if (deployment) {
         const level = deployment.spec?.template?.spec?.containers?.[0]?.env?.find(e => e.name === 'LEVEL_NAME')?.value ?? name
         await scaleDownAndWait(kubectl, name, deps.stopTimeoutMs, deps.pollMs)
-        exported = await exportWorld(deps, name, level, o.operator)
+        exported = (await exportWorld(deps, name, level, o.operator)) ?? undefined
       }
       if (name in ports) {
         try {

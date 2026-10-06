@@ -9,12 +9,13 @@ const logs: object[] = []
 const logger = { info: (o: object) => { logs.push(o) } }
 const WRITE_VERBS = ['create', 'apply', 'replace', 'delete', 'patch', 'scale', 'label']
 
-function cluster(o: { replicas?: number, volume?: boolean, job?: 'ok' | 'fail' | 'never', files?: string, missing?: boolean } = {}) {
+function cluster(o: { replicas?: number, volume?: boolean, job?: 'ok' | 'fail' | 'never', files?: string, missing?: boolean, noWorld?: boolean } = {}) {
   const deployment = { kind: 'Deployment', metadata: { name: 'bedrock-zz', labels, resourceVersion: '1' }, spec: { replicas: o.replicas ?? 0, template: { spec: { containers: [{ name: 'bedrock', env: [] }] } } } }
   const pod = { kind: 'Pod', metadata: { name: 'p', uid: `u-${Math.random()}`, labels }, status: { conditions: [{ type: 'Ready', status: 'True' }] } }
   const k = fakeKubectl([
     { match: a => a[0] === 'get' && a[1] === 'deploy,pods', result: { stdout: JSON.stringify({ items: [deployment, ...(o.replicas ? [pod] : [])] }) } },
     { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: '{}' } },
+    { match: a => a[0] === 'logs' && a[1]?.startsWith('job/'), result: { stdout: o.noWorld ? 'no-world\n' : '' } },
     { match: a => a[0] === 'logs', result: { stdout: 'Server started.' } },
     { match: a => a[0] === 'get' && /^(pvc|deploy)\/mc-exports$/.test(a[1]!), result: { stdout: o.volume ? 'x/mc-exports\n' : '' } },
     { match: a => a[0] === 'get' && a[1]?.startsWith('job/'), result: { stdout: JSON.stringify({ status: o.job === 'ok' ? { succeeded: 1 } : o.job === 'fail' ? { failed: 1 } : {} }) } },
@@ -77,13 +78,22 @@ describe('exportWorld', () => {
     const spec = job.spec.template.spec
     expect(spec.restartPolicy).toBe('Never')
     expect(spec.containers[0].image).toBe('busybox:1.37')
-    expect(spec.containers[0].command).toEqual(['tar', 'czf', `/exports/${file}`, '-C', '/data/worlds', 'My World'])
+    const [sh, c, script, ...args] = spec.containers[0].command
+    expect([sh, c, ...args]).toEqual(['sh', '-c', 'export', file, 'My World'])
+    expect(script).toContain('tar czf "/exports/$1" -C /data/worlds -- "$2"')
     expect(spec.volumes.map((v: { persistentVolumeClaim: { claimName: string } }) => v.persistentVolumeClaim.claimName).sort()).toEqual(['bedrock-data-zz', 'mc-exports'])
     expect(spec.volumes.find((v: { persistentVolumeClaim: { claimName: string } }) => v.persistentVolumeClaim.claimName === 'bedrock-data-zz').persistentVolumeClaim.readOnly).toBe(true)
     expect(spec.containers[0].volumeMounts.find((m: { mountPath: string }) => m.mountPath === '/data/worlds' || m.mountPath === '/data').readOnly).toBe(true)
     expect(k.calls.some(a => a[0] === 'delete' && a[1]!.startsWith('job/'))).toBe(true)
     expect(k.calls.filter(a => a[0] === 'delete').every(a => a[1]!.startsWith('job/'))).toBe(true)
     expect(logs.filter((l: any) => l.action === 'export' && l.outcome === 'ok')).toHaveLength(1) // eslint-disable-line @typescript-eslint/no-explicit-any
+  })
+
+  it('returns null when the world directory does not exist (the server never ran)', async () => {
+    const k = cluster({ volume: true, job: 'ok', noWorld: true })
+    expect(await exportWorld(deps(k), 'zz', 'My World', 'alice')).toBeNull()
+    const script = objs(k)[0].spec.template.spec.containers[0].command[2]
+    expect(script).toContain('[ -d "/data/worlds/$2" ]')
   })
 
   it.each(['fail', 'never'] as const)('a %s Job is an error, not a partial success, and issues no delete at all', async (job) => {

@@ -131,6 +131,12 @@ describe('startServer', () => {
 })
 
 describe('restartServer', () => {
+  it('409 not running on a stopped server, with no rollout', async () => {
+    const k = cluster({ replicas: 0 })
+    await expect(restartServer(deps(k), 'zz', { ...o, confirm: true })).rejects.toMatchObject({ status: 409 })
+    expect(verbs(k)).toEqual([])
+  })
+
   it('requires confirm and runs rollout restart with the warning', async () => {
     const k = cluster()
     await expect(restartServer(deps(k), 'zz', { ...o, confirm: false })).rejects.toMatchObject({ status: 400 })

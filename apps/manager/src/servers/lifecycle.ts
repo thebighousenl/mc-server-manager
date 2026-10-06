@@ -52,7 +52,8 @@ export const startServer = act('start', false, async ({ kubectl }, name, desired
   await kubectl.run(['scale', `deploy/${names(name).deployment}`, '--replicas=1'])
 })
 
-export const restartServer = act('restart', true, async ({ kubectl }, name) => {
+export const restartServer = act('restart', true, async ({ kubectl }, name, desired) => {
+  if (desired !== 'running') throw new LifecycleError(409, `${name} is not running`) // rollout restart at 0 replicas does nothing
   await kubectl.run(['rollout', 'restart', `deploy/${names(name).deployment}`])
 })
 

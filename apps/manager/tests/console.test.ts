@@ -8,7 +8,7 @@ const labels = { 'app.kubernetes.io/name': 'bedrock', 'app.kubernetes.io/instanc
 let n = 0
 
 // Pod UIDs are unique per cluster because the started-tracker is shared.
-function cluster(o: { replicas?: number, output?: string } = {}) {
+function cluster(o: { replicas?: number, output?: string | (() => string) } = {}) {
   const uid = `console-${n++}`
   const pod = { kind: 'Pod', metadata: { name: 'bedrock-zz-x', uid, labels }, status: { conditions: [{ type: 'Ready', status: 'True' }] } }
   return fakeKubectl([
@@ -18,7 +18,7 @@ function cluster(o: { replicas?: number, output?: string } = {}) {
     },
     { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: '{}' } },
     { match: a => a[0] === 'logs' && a[1] === 'bedrock-zz-x', result: { stdout: 'Server started.' } },
-    { match: a => a[0] === 'logs', result: { stdout: o.output ?? '' } },
+    { match: a => a[0] === 'logs', result: () => ({ stdout: typeof o.output === 'function' ? o.output() : o.output ?? '' }) },
     { match: a => a[0] === 'exec', result: { stdout: '' } },
   ])
 }
@@ -28,6 +28,21 @@ const deps = (kubectl: ReturnType<typeof cluster>) => ({ kubectl, logger, pollMs
 const o = { operator: 'alice' }
 
 describe('sendCommand', () => {
+  it('waits for the reply that follows an unrelated log line', async () => {
+    let reads = 0
+    const k = cluster({ output: () => reads++ === 0 ? '[t INFO] Player connected\n' : '[t INFO] Player connected\n[t INFO] Set the time to 0\n' })
+    const res = await sendCommand({ ...deps(k), timeoutMs: 2000, settleMs: 5 }, 'zz', 'time set day', o)
+    expect(res.lines).toEqual(['[t INFO] Player connected', '[t INFO] Set the time to 0'])
+  })
+
+  it('reads the log from slightly before the command to survive clock skew', async () => {
+    const k = cluster({ output: '[t INFO] hi\n' })
+    const before = Date.now()
+    await sendCommand(deps(k), 'zz', 'say hi', o)
+    const since = k.calls.find(a => a[0] === 'logs' && a[1] === 'deploy/bedrock-zz')!.find(x => x.startsWith('--since-time='))!.split('=')[1]!
+    expect(Date.parse(since)).toBeLessThan(before)
+  })
+
   it('passes each word as its own argument, never through a shell', async () => {
     const k = cluster({ output: '[t INFO] hi\n' })
     await sendCommand(deps(k), 'zz', 'say hi; rm -rf /', o)

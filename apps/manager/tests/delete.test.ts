@@ -32,6 +32,7 @@ function cluster(o: { name?: string, labels?: Record<string, string>, exportFail
     { match: a => a[0] === 'get' && a[1] === 'deploy,pods', result: () => ({ stdout: JSON.stringify({ items: present.has(`deployment/bedrock-${name}`) ? [deployment(), ...(replicas ? [pod] : [])] : [] }) }) },
     { match: a => a[0] === 'get' && a[1] === 'pods', result: () => ({ stdout: JSON.stringify({ items: replicas ? [pod] : [] }) }) },
     { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: () => ({ stdout: JSON.stringify(traefik) }) },
+    { match: a => a[0] === 'logs' && a[1]?.startsWith('job/'), result: { stdout: o.noWorld ? 'no-world\n' : '' } },
     { match: a => a[0] === 'logs', result: { stdout: 'Server started.' } },
     { match: a => a[0] === 'get' && /^(pvc|deploy)\/mc-exports$/.test(a[1]!), result: { stdout: 'x\n' } },
     { match: a => a[0] === 'get' && a[1]!.startsWith('job/'), result: { stdout: JSON.stringify({ status: o.exportFails ? { failed: 1 } : { succeeded: 1 } }) } },
@@ -131,6 +132,14 @@ describe('deleteServer order and recovery', () => {
     await run(k)
     const job = k.calls.flatMap((a, i) => a[0] === 'create' ? [JSON.parse(k.stdins[i]!)] : []).find(o => o.kind === 'Job')
     expect(job.spec.template.spec.containers[0].command.at(-1)).toBe('My World')
+  })
+
+  it('deletes a server that never ran: no world directory means nothing to export', async () => {
+    const k = cluster({ noWorld: true })
+    const res = await run(k)
+    expect(res).toEqual({ server: 'zz' })
+    expect(deletes(k).at(-1)).toBe('pvc/bedrock-data-zz')
+    expect(k.present.size).toBe(0)
   })
 
   it('a failed export returns an error and the fake shows no delete call at all', async () => {
