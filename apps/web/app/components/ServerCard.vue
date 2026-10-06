@@ -13,7 +13,9 @@ const age = computed(() => {
 <template>
   <UCard data-testid="server-card">
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold">{{ server.name }}</h2>
+      <h2 class="text-lg font-semibold">
+        <NuxtLink data-testid="server-link" :to="`/servers/${server.name}`">{{ server.name }}</NuxtLink>
+      </h2>
       <div class="flex gap-1">
         <UBadge v-if="server.protected" data-testid="protected-badge" color="neutral" variant="subtle" icon="i-lucide-lock">protected</UBadge>
         <UBadge data-testid="state-badge" :color="colors[server.state]" variant="subtle">{{ server.state }}</UBadge>
