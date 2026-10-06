@@ -1,3 +1,4 @@
+import { ManagerMisconfigured } from './manager'
 import { routes } from './servers-routes'
 
 export interface GatewayRequest {
@@ -46,8 +47,8 @@ export async function forward(req: GatewayRequest, deps: GatewayDeps): Promise<R
   try {
     res = await deps.managerFetch(search ? `${m.path}?${search}` : m.path, { method: req.method, headers, body: req.body, signal }, req.operator)
   }
-  catch {
-    return json(502, { error: 'unavailable' })
+  catch (err) {
+    return json(502, { error: err instanceof ManagerMisconfigured ? 'misconfigured' : 'unavailable' })
   }
   // 401 from the manager means our shared secret is wrong: never show that to the browser as a logout.
   if (res.status >= 500 || res.status === 401) return json(502, { error: 'unavailable' })
