@@ -55,6 +55,7 @@ function match(routes: ServerRoute[], method: string, path: string): { route: Se
 
 // Only allow-listed routes reach the manager; the response is reduced to a few safe headers.
 export async function forward(req: ForwardRequest, deps: ForwardDeps = { ...useRuntimeConfig(), fetch }): Promise<Response> {
+  if (!deps.managerUrl || !deps.managerSecret) return reply(502, 'misconfigured')
   const m = match(deps.routes ?? serverRoutes, req.method, req.path)
   if (m instanceof Response) return m
   const { route, managerPath } = m
