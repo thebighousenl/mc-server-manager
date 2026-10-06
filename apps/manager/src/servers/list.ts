@@ -22,7 +22,8 @@ async function load(kubectl: Kubectl, opts: ListOpts): Promise<ServerDetail[]> {
 
 export async function listServers(kubectl: Kubectl, opts: ListOpts = {}): Promise<ListResult> {
   try {
-    const servers = (await load(kubectl, opts)).map(({ settings: _s, resourceVersion: _r, ...server }) => server)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const servers = (await load(kubectl, opts)).map(({ settings, resourceVersion, ...server }) => server)
     return { servers, clusterOk: true }
   } catch (err) {
     if (!(err instanceof KubectlError)) throw err
