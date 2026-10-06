@@ -39,9 +39,13 @@ Create an operator:
 
 ```bash
 printf %s '<password>' | pnpm --filter web hash-password   # prints scrypt$<salt>$<hash>; stdin keeps it out of shell history
-# then in .env:
+# then in the repo-root .env (paste the hash as-is; keep the single quotes):
 NUXT_AUTH_USERS='[{"username":"alice","passwordHash":"<hash>"}]'
 ```
+
+`pnpm dev` / `pnpm --filter web dev` read the repo-root `.env` (the web dev script passes
+`--dotenv ../../.env`); restart the dev server after editing it. If login fails for valid
+credentials, check the server log for `no_operators_configured`.
 
 Sessions and lockout counters live in process memory: restarting the web app signs everyone out, and
 **only a single web replica is supported**. In the cluster, supply `NUXT_AUTH_USERS` from a Secret
