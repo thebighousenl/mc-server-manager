@@ -126,6 +126,23 @@ describe('forward', () => {
     expect(init.body).toBe('{"confirm":false}')
   })
 
+  it.each(['start', 'stop', 'restart'])('forwards POST /api/servers/:name/%s with its body', async (action) => {
+    const { fetch, deps } = gateway()
+    await forward(req(`/api/servers/zz-test/${action}`, { method: 'POST', body: '{"confirm":true}', contentType: 'application/json' }), deps)
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe(`/servers/zz-test/${action}`)
+    expect(init.body).toBe('{"confirm":true}')
+  })
+
+  it('streams GET /api/servers/:name/logs with its query and no timeout', async () => {
+    const { fetch, deps } = gateway(ok('data: x\n\n', { 'content-type': 'text/event-stream' }))
+    const res = await forward(req('/api/servers/zz-test/logs?follow=1&tail=50'), deps)
+    expect(res.headers.get('x-accel-buffering')).toBe('no')
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe('/servers/zz-test/logs?follow=1&tail=50')
+    expect(init.signal).toBeUndefined()
+  })
+
   describe(':name routes', () => {
     const withNameRoute = async (fn: () => Promise<void>) => {
       const { routes } = await import('../server/utils/servers-routes')
