@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { dummyVerify, hashPassword, parseUsers, verifyPassword } from '../server/utils/password'
+import { configProblems, dummyVerify, hashPassword, parseUsers, verifyPassword } from '../server/utils/password'
 import { testUsers } from './helpers/auth'
 
 describe('password hashing', () => {
@@ -66,5 +66,41 @@ describe('parseUsers', () => {
 
   it.each(['', 'not json', '{}', '"str"', 'null'])('%j -> []', (input) => {
     expect(parseUsers(input)).toEqual([])
+  })
+})
+
+describe('configProblems', () => {
+  const { passwordHash } = testUsers()
+
+  it('accepts valid, empty and unset values', () => {
+    expect(configProblems(JSON.stringify([{ username: 'alice', passwordHash }]))).toEqual([])
+    expect(configProblems('')).toEqual([])
+    expect(configProblems('[]')).toEqual([])
+  })
+
+  it('reports invalid JSON without echoing the value', () => {
+    const raw = '[{ "dev", "GFI+r5qqKZIr+j0DVBXIHHXDhdDKhUjhUgrl8JPqryxo0dh7Yjc3Txth3JVZrWBPiVDnyGE2HzKWfgHxN3GwKA==" }]'
+    const [msg, ...more] = configProblems(raw)
+    expect(more).toEqual([])
+    expect(msg).toContain('not valid JSON')
+    expect(msg).not.toContain('GFI+')
+  })
+
+  it.each(['{}', '"str"', 'null'])('%s -> must be an array', (input) => {
+    expect(configProblems(input)).toEqual(['NUXT_AUTH_USERS must be a JSON array'])
+  })
+
+  it('names the malformed entry index and never leaks the hash', () => {
+    const bad = 'scrypt$not-a-valid-hash$SECRETHASHVALUE'
+    const problems = configProblems(JSON.stringify([
+      { username: 'ok', passwordHash },
+      { username: 'bad', passwordHash: bad },
+      null,
+    ]))
+    expect(problems).toHaveLength(2)
+    expect(problems[0]).toContain('entry 1 has no valid username/passwordHash')
+    expect(problems[1]).toContain('entry 2')
+    expect(problems.join()).not.toContain('SECRETHASHVALUE')
+    expect(problems.join()).not.toContain(passwordHash)
   })
 })

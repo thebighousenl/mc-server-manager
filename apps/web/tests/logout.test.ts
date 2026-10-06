@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '../server/utils/logout'
-import { createSession, getSession } from '../server/utils/sessions'
+import { createSession, lookupSession } from '../server/utils/sessions'
 import { testDeps } from './helpers/auth'
 
 let out: string[]
@@ -19,7 +19,7 @@ describe('logout', () => {
     const { deps } = testDeps()
     const token = createSession('alice', deps)
     logout(token, deps, '1.2.3.4')
-    expect(getSession(token, deps)).toBeUndefined()
+    expect(lookupSession(token, deps)).toBeUndefined()
     expect(JSON.parse(out[0]!)).toMatchObject({ event: 'logout', username: 'alice', ip: '1.2.3.4' })
     expect(out.join('')).not.toContain(token)
   })
@@ -36,7 +36,7 @@ describe('logout', () => {
     const a = createSession('alice', deps)
     const b = createSession('alice', deps)
     logout(a, deps)
-    expect(getSession(a, deps)).toBeUndefined()
-    expect(getSession(b, deps)).toEqual({ username: 'alice' })
+    expect(lookupSession(a, deps)).toBeUndefined()
+    expect(lookupSession(b, deps)).toEqual({ username: 'alice' })
   })
 })

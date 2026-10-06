@@ -42,6 +42,13 @@ export async function dummyVerify(): Promise<false> {
   return false
 }
 
+const validEntry = (u: unknown) => {
+  const { username, passwordHash } = (u ?? {}) as Record<string, unknown>
+  return typeof username === 'string' && username.length >= 1 && username.length <= 64 && isHash(passwordHash)
+    ? { username: username.toLowerCase(), passwordHash }
+    : undefined
+}
+
 export function parseUsers(json: string): Operator[] {
   let raw: unknown
   try {
@@ -53,10 +60,25 @@ export function parseUsers(json: string): Operator[] {
   if (!Array.isArray(raw)) return []
   const users: Operator[] = []
   for (const u of raw) {
-    const { username, passwordHash } = (u ?? {}) as Record<string, unknown>
-    if (typeof username !== 'string' || username.length < 1 || username.length > 64 || !isHash(passwordHash)) continue
-    const name = username.toLowerCase()
-    if (!users.some(x => x.username === name)) users.push({ username: name, passwordHash }) // first wins
+    const op = validEntry(u)
+    if (op && !users.some(x => x.username === op.username)) users.push(op) // first wins
   }
   return users
+}
+
+// Startup diagnostics for NUXT_AUTH_USERS. Messages never echo the raw value or any hash.
+// Unset/empty is not a misconfiguration here: it is reported as no_operators_configured.
+export function configProblems(json: string): string[] {
+  if (!json.trim()) return []
+  let raw: unknown
+  try {
+    raw = JSON.parse(json)
+  }
+  catch {
+    return ['NUXT_AUTH_USERS is not valid JSON (expected [{"username":"...","passwordHash":"scrypt$<salt>$<hash>"}])']
+  }
+  if (!Array.isArray(raw)) return ['NUXT_AUTH_USERS must be a JSON array']
+  return raw.flatMap((u, i) => validEntry(u)
+    ? []
+    : [`NUXT_AUTH_USERS entry ${i} has no valid username/passwordHash (expected scrypt$<salt>$<hash>)`])
 }

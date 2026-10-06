@@ -1,7 +1,7 @@
 import type { AuthDeps } from './auth-config'
 import { authLog } from './auth-log'
 import { parseUsers } from './password'
-import { getSession } from './sessions'
+import { lookupSession } from './sessions'
 
 export type AuthorizeResult = { ok: true, username?: string } | { ok: false, status: 401 | 403, message: string }
 
@@ -58,7 +58,7 @@ export function authorize(
 
   const unauthorized = { ok: false, status: 401, message: 'Unauthorized' } as const
   if (!req.token || parseUsers(deps.config.users).length === 0) return unauthorized
-  const session = getSession(req.token, deps)
+  const session = lookupSession(req.token, deps)
   if (!session) return unauthorized
   if ('expired' in session) {
     authLog('session_expired', { username: session.username })
