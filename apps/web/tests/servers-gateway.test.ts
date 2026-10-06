@@ -30,7 +30,7 @@ describe('forward', () => {
 
   it.each([
     ['GET', '/api/unknown'],
-    ['POST', '/api/servers'],
+    ['PUT', '/api/servers'],
     ['DELETE', '/api/servers'],
     ['GET', '/api/servers/extra/segments'],
     ['GET', '/apix/servers'],
@@ -160,6 +160,23 @@ describe('forward', () => {
     expect(path).toBe('/servers/zz-test/settings')
     expect(init.method).toBe('PUT')
     expect(init.body).toBe('{"confirm":true}')
+  })
+
+  it('forwards POST /api/servers (create) and POST reachability with their bodies', async () => {
+    const { fetch, deps } = gateway()
+    await forward(req('/api/servers', { method: 'POST', body: '{"name":"zz","confirm":true}', contentType: 'application/json' }), deps)
+    await forward(req('/api/servers/zz/reachability', { method: 'POST' }), deps)
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe('/servers')
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe('{"name":"zz","confirm":true}')
+    expect(fetch.mock.calls[1]![0]).toBe('/servers/zz/reachability')
+  })
+
+  it('rejects an invalid name on reachability with 400', async () => {
+    const { fetch, deps } = gateway()
+    expect((await forward(req('/api/servers/Bad_Name/reachability', { method: 'POST' }), deps)).status).toBe(400)
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   describe(':name routes', () => {

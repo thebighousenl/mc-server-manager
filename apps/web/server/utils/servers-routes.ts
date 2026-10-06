@@ -3,6 +3,7 @@ export interface ServerRoute { method: string, pattern: string, stream?: boolean
 
 export const routes: ServerRoute[] = [
   { method: 'GET', pattern: '/api/servers' },
+  { method: 'POST', pattern: '/api/servers' },
   { method: 'GET', pattern: '/api/servers/events', stream: true }, // before :name
   { method: 'GET', pattern: '/api/servers/:name' },
   { method: 'POST', pattern: '/api/servers/:name/adopt' },
@@ -13,4 +14,5 @@ export const routes: ServerRoute[] = [
   { method: 'POST', pattern: '/api/servers/:name/command' },
   { method: 'GET', pattern: '/api/servers/:name/players' },
   { method: 'PUT', pattern: '/api/servers/:name/settings' },
+  { method: 'POST', pattern: '/api/servers/:name/reachability' },
 ]
