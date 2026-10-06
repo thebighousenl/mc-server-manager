@@ -43,4 +43,5 @@ export function fakeKubectl(rules: FakeRule[]) {
   return kubectl
 }
 
-export const fixture = (name: string): string => readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf8')
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const fixture = (name: string): any => JSON.parse(readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf8'))
