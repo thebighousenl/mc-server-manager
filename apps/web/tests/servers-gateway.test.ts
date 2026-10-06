@@ -100,6 +100,24 @@ describe('forward', () => {
     }
   })
 
+  it('streams /api/servers/events and forwards /api/servers/:name', async () => {
+    const fetch = vi.fn(async (..._a: unknown[]) => new Response('event: servers\n\n', { headers: { 'content-type': 'text/event-stream' } }))
+    const deps = { managerFetch: fetch }
+    const res = await forward(req('/api/servers/events'), deps)
+    expect(res.headers.get('content-type')).toBe('text/event-stream')
+    expect(await res.text()).toBe('event: servers\n\n')
+    expect(fetch.mock.calls[0]![0]).toBe('/servers/events')
+    await forward(req('/api/servers/daan'), deps)
+    expect(fetch.mock.calls[1]![0]).toBe('/servers/daan')
+  })
+
+  it('404 for unlisted server routes without calling the manager', async () => {
+    const { fetch, deps } = gateway()
+    expect((await forward(req('/api/servers/daan/unlisted'), deps)).status).toBe(404)
+    expect((await forward(req('/api/servers/daan', { method: 'DELETE' }), deps)).status).toBe(404)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   describe(':name routes', () => {
     const withNameRoute = async (fn: () => Promise<void>) => {
       const { routes } = await import('../server/utils/servers-routes')
