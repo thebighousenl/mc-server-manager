@@ -4,6 +4,7 @@ import type { Config } from './config.js'
 import type { Kubectl } from './kube/kubectl.js'
 import { healthRoutes } from './routes/health.js'
 import { adoptRoutes } from './routes/adopt.js'
+import { createRoutes } from './routes/create.js'
 import { consoleRoutes } from './routes/console.js'
 import { eventsRoutes } from './routes/events.js'
 import { lifecycleRoutes } from './routes/lifecycle.js'
@@ -13,7 +14,7 @@ import { serverRoutes } from './routes/servers.js'
 import { listServers } from './servers/list.js'
 import { createPoller } from './servers/poller.js'
 
-export interface Deps { kubectl: Kubectl }
+export interface Deps { kubectl: Kubectl, ping?: (host: string, port: number) => Promise<boolean> }
 
 export function buildApp(config: Config & { logLevel?: string, logStream?: { write(msg: string): void } }, deps: Deps) {
   const app = Fastify({
@@ -37,5 +38,6 @@ export function buildApp(config: Config & { logLevel?: string, logStream?: { wri
   logsRoutes(app, deps)
   consoleRoutes(app, deps)
   settingsRoutes(app, deps)
+  createRoutes(app, config, deps)
   return app
 }
