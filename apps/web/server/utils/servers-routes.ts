@@ -10,4 +10,6 @@ export const routes: ServerRoute[] = [
   { method: 'POST', pattern: '/api/servers/:name/stop' },
   { method: 'POST', pattern: '/api/servers/:name/restart' },
   { method: 'GET', pattern: '/api/servers/:name/logs', stream: true },
+  { method: 'POST', pattern: '/api/servers/:name/command' },
+  { method: 'GET', pattern: '/api/servers/:name/players' },
 ]

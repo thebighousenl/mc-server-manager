@@ -143,6 +143,16 @@ describe('forward', () => {
     expect(init.signal).toBeUndefined()
   })
 
+  it('forwards POST command with its body and GET players', async () => {
+    const { fetch, deps } = gateway()
+    await forward(req('/api/servers/zz-test/command', { method: 'POST', body: '{"command":"list"}', contentType: 'application/json' }), deps)
+    await forward(req('/api/servers/zz-test/players'), deps)
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe('/servers/zz-test/command')
+    expect(init.body).toBe('{"command":"list"}')
+    expect(fetch.mock.calls[1]![0]).toBe('/servers/zz-test/players')
+  })
+
   describe(':name routes', () => {
     const withNameRoute = async (fn: () => Promise<void>) => {
       const { routes } = await import('../server/utils/servers-routes')
