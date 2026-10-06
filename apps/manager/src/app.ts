@@ -3,6 +3,7 @@ import Fastify from 'fastify'
 import type { Config } from './config.js'
 import type { Kubectl } from './kube/kubectl.js'
 import { healthRoutes } from './routes/health.js'
+import { serverRoutes } from './routes/servers.js'
 
 export interface Deps { kubectl: Kubectl }
 
@@ -21,5 +22,6 @@ export function buildApp(config: Config & { logLevel?: string }, deps: Deps) {
   })
 
   healthRoutes(app, config, deps)
+  serverRoutes(app, deps)
   return app
 }

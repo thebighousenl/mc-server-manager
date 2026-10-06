@@ -13,7 +13,7 @@ const cluster = () => fakeKubectl([
   { match: a => a[1] === 'helmchartconfig', result: { stdout: traefik } },
 ])
 const down = () => fakeKubectl([{ match: () => true, result: () => { throw new KubectlError('unreachable') } }])
-const get = (kubectl: ReturnType<typeof cluster>, url: string, authorization: string | undefined = `Bearer ${secret}`) =>
+const get = (kubectl: ReturnType<typeof cluster>, url: string, authorization: string | null = `Bearer ${secret}`) =>
   buildApp(config, { kubectl }).inject({ method: 'GET', url, headers: authorization ? { authorization } : {} })
 
 describe('server read routes', () => {
@@ -32,7 +32,7 @@ describe('server read routes', () => {
   })
 
   it('requires the bearer secret', async () => {
-    expect((await get(cluster(), '/servers', undefined)).statusCode).toBe(401)
+    expect((await get(cluster(), '/servers', null)).statusCode).toBe(401)
   })
 
   it.each(['/servers/Bad_Name', '/servers/..%2f'])('rejects %s with 400 and no kubectl call', async (url) => {
