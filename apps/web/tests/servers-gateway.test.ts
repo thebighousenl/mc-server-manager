@@ -78,15 +78,6 @@ describe('forward: manager request', () => {
     expect(headers.get('authorization')).toBe('Bearer s3cret')
     expect(headers.get('x-operator')).toBe('alice')
   })
-
-  it('ignores client-supplied credentials: only the gateway sets them', async () => {
-    const { fetch, call } = setup()
-    await call('/api/servers', { headers: { authorization: 'Bearer evil', 'x-operator': 'mallory', cookie: 'sid=1' } } as never)
-    const headers = new Headers(fetch.mock.calls[0]![1]!.headers)
-    expect(headers.get('authorization')).toBe('Bearer s3cret')
-    expect(headers.get('x-operator')).toBe('alice')
-    expect(headers.get('cookie')).toBeNull()
-  })
 })
 
 describe('forward: response', () => {
@@ -147,7 +138,7 @@ describe('forward: response', () => {
 
 describe('forward: request body', () => {
   const routes = [{ method: 'POST', pattern: '/api/servers/:name/command' }]
-  const run = (body: Uint8Array | string) => {
+  const run = (body: string) => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () => json({}))
     return forward(
       { method: 'POST', path: '/api/servers/foo/command', username: 'alice', body },

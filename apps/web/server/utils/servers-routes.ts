@@ -6,7 +6,7 @@ export interface ServerRoute {
   stream?: boolean
 }
 
-// The only (method, path) pairs the gateway forwards to the manager. Story PRs add rows here.
+// The only (method, path) pairs the gateway forwards to the manager. Story PRs add rows here; put literal rows (`/api/servers/events`) before `:name` rows.
 export const serverRoutes: ServerRoute[] = [
   { method: 'GET', pattern: '/api/servers' },
 ]
