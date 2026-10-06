@@ -77,6 +77,15 @@ requires `Authorization: Bearer <secret>` on its requests.
 | `MANAGER_SECRET` | manager | placeholder | Shared bearer secret, >= 32 chars. Must equal `NUXT_MANAGER_SECRET`. |
 | `MANAGER_HOST` | manager | `127.0.0.1` | Interface the manager binds to. |
 | `MANAGER_PORT` | manager | `3001` | Port the manager listens on. |
+| `KUBECTL_BIN` | manager | `kubectl` | `kubectl` binary to run. |
+| `KUBECONFIG` | manager | unset | Kubeconfig file; unset uses kubectl's default. |
+| `KUBE_CONTEXT` | manager | unset | Kubeconfig context to use. |
+| `MC_NAMESPACE` | manager | `minecraft-servers` | Namespace the servers live in. |
+| `MC_PORT_MIN` / `MC_PORT_MAX` | manager | `19132` / `19999` | UDP port range handed out to new servers. |
+| `MC_PUBLIC_HOST` | manager | `127.0.0.1` | Node address used for the outside reachability check. |
+| `MC_POLL_MS` | manager | `3000` | Status poll interval (min 500). |
+| `MC_EXPORTS_SIZE` | manager | `20Gi` | Size of the exports volume (Kubernetes quantity). |
+| `MC_EXPORTS_STORAGE_CLASS` | manager | `local-path` | Storage class of the exports volume. |
 | `NUXT_MANAGER_URL` | web (server) | `http://127.0.0.1:3001` | Base URL of the manager. |
 | `NUXT_MANAGER_SECRET` | web (server) | placeholder | Bearer secret sent to the manager. Must equal `MANAGER_SECRET`. |
 | `NUXT_AUTH_USERS` | web (server) | `[]` | JSON array of `{ "username", "passwordHash" }` operators. Treat as a Secret. |
@@ -85,3 +94,21 @@ requires `Authorization: Bearer <secret>` on its requests.
 | `NUXT_AUTH_MAX_LIFETIME_MS` | web (server) | `43200000` | Absolute session lifetime (12 h). |
 | `NUXT_AUTH_MAX_FAILURES` | web (server) | `5` | Failed sign-ins before a username or IP is locked. |
 | `NUXT_AUTH_LOCKOUT_MS` | web (server) | `300000` | Lockout duration and failure-counting window (5 min). |
+
+## Cluster access (kubectl)
+
+The manager drives the cluster by running `kubectl`; it does not use the Kubernetes API directly.
+
+1. Install `kubectl` on the manager host (or point `KUBECTL_BIN` at it).
+2. Give the host a kubeconfig for a least-privilege identity: apply `docs/rbac/mc-manager-role.yaml` and verify with the checks in `docs/rbac/README.md`. Select it with `KUBECONFIG` and, if needed, `KUBE_CONTEXT`.
+3. Run as usual (`pnpm dev`, or the production process with the variables above). Missing permissions show in the health output and the affected actions fail naming the permission.
+
+### Servers
+
+- **Protected servers:** `gaitie`, `daan`, `kontgat`, `creative` and `plaskutje` (plus anything labelled protected) can never be deleted, through the UI or API.
+- **Restart and `LATEST`:** a server whose version is `LATEST` (or unset) pulls the newest Minecraft version on every start, which can irreversibly upgrade the world. Start/restart returns a warning; pin a version instead.
+- **Delete, export and download:** deleting a server requires typing its name and always exports the world first. Exports are listed on the exports page and downloaded from there.
+
+### What the manager does not do
+
+Firewall changes, world import, and backups.
