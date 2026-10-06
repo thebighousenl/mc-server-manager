@@ -10,6 +10,5 @@ export default defineEventHandler((event) => {
     getRequestIP(event, { xForwardedFor: config.trustProxy }),
   )
   deleteCookie(event, SESSION_COOKIE, cookieOptions(!import.meta.dev))
-  setResponseStatus(event, 204)
-  return null
+  return sendNoContent(event)
 })

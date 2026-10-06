@@ -5,7 +5,7 @@ export default defineNuxtPlugin(() => {
     onResponseError({ request, response }) {
       const route = useRoute()
       if (response.status !== 401 || String(request).startsWith('/api/auth/') || route.path === '/login') return
-      return navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`)
+      void navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`)
     },
   })
 })

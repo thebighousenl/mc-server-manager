@@ -8,7 +8,9 @@ export interface AuthLogFields {
 
 // One JSON line per event to stdout; secrets are stripped even if a caller passes them.
 export function authLog(event: string, fields: AuthLogFields = {}): void {
-  const entry: Record<string, unknown> = { level: 'info', ts: new Date().toISOString(), event, ...fields }
-  for (const key of SECRET_FIELDS) delete entry[key]
+  const entry = Object.fromEntries(
+    Object.entries({ level: 'info', ts: new Date().toISOString(), event, ...fields })
+      .filter(([key]) => !SECRET_FIELDS.includes(key)),
+  )
   process.stdout.write(`${JSON.stringify(entry)}\n`)
 }
