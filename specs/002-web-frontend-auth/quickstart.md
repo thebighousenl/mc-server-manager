@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - `pnpm install`, `.env` created from `.env.example`.
-- Generate an operator hash: `pnpm --filter web hash-password '<password>'`.
+- Generate an operator hash: `printf %s '<password>' | pnpm --filter web hash-password`.
 - Add to `.env`: `NUXT_AUTH_USERS='[{"username":"alice","passwordHash":"<hash>"}]'`
 
 ## Automated

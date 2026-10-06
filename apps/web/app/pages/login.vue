@@ -12,9 +12,14 @@ async function submit() {
     await navigateTo(safeRedirect(route.query.redirect))
   }
   catch (e) {
-    error.value = (e as { statusCode?: number }).statusCode === 429
+    const status = (e as { statusCode?: number }).statusCode
+    error.value = status === 429
       ? 'Too many attempts, try again later'
-      : 'Invalid credentials'
+      : status === 401
+        ? 'Invalid credentials'
+        : status === 400
+          ? 'Enter a username and password (max 256 characters each)'
+          : `Sign-in failed (${status ?? 'network error'}), please try again`
   }
   finally {
     loading.value = false

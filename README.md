@@ -38,7 +38,7 @@ sign-in. Operators are defined in `NUXT_AUTH_USERS`; with none configured nobody
 Create an operator:
 
 ```bash
-pnpm --filter web hash-password '<password>'   # prints scrypt$<salt>$<hash>
+printf %s '<password>' | pnpm --filter web hash-password   # prints scrypt$<salt>$<hash>; stdin keeps it out of shell history
 # then in .env:
 NUXT_AUTH_USERS='[{"username":"alice","passwordHash":"<hash>"}]'
 ```
@@ -47,6 +47,15 @@ Sessions and lockout counters live in process memory: restarting the web app sig
 **only a single web replica is supported**. In the cluster, supply `NUXT_AUTH_USERS` from a Secret
 and set `NUXT_AUTH_TRUST_PROXY=true` behind the ingress so the lockout sees real client IPs (leave it
 `false` when the app is directly exposed, otherwise clients can spoof `X-Forwarded-For`).
+
+The session cookie is `Secure` in production builds, so the app must be served over HTTPS (the
+ingress terminates TLS); over plain HTTP the browser drops the cookie and sign-in appears to loop.
+`Origin` is checked against the request `Host`, so the ingress must pass the original `Host` through.
+
+Lockout trade-offs: 5 failures lock a username (from any IP) and, separately, the client IP for
+`NUXT_AUTH_LOCKOUT_MS`. This means anyone who knows a username can lock that operator out for the
+cooldown, and without `NUXT_AUTH_TRUST_PROXY=true` behind a proxy all clients share one IP and 5
+failures lock everybody out.
 
 ## Architecture
 

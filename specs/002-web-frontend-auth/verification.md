@@ -35,3 +35,9 @@ Run against `pnpm exec nuxt dev` with `NUXT_AUTH_IDLE_TIMEOUT_MS=5000`, `NUXT_AU
 - Nuxt prints `WARN Duplicated imports "getSession"` because the `getSession` required by T008 shadows the h3 auto-import of the same name. The util takes precedence and nothing else uses h3's.
 - `NUXT_AUTH_USERS='[...]'` is parsed by Nitro into an array before it reaches the app, so `getAuthConfig()` re-serialises it to the JSON-string contract.
 - The `Origin` check compares against the request `Host` header, so the ingress must pass the original `Host` through.
+
+## Review follow-up (PR #68 comment)
+Re-checked on a fresh production build after the fixes (`lint`, `typecheck` and 132 web tests pass):
+- **Odd API paths**: `//api/auth/me`, `/%61pi/auth/me`, `/api/../api/auth/me`, `/./api/auth/me`, `///api/auth/me` and `/api/auth/me/` all return 401 (before the fix, the `//`, `///` and `/./` forms fell through to the page renderer). `/api/health` and `/login` still return 200.
+- **Sign-out with a stale cookie**: `POST /api/auth/logout` returns 204 and clears the cookie. Without an `Origin` it returns 403.
+- **Not checked (no browser)**: the sign-out button always navigating to `/login`, the 401 plugin's redirect, and the new login error messages.

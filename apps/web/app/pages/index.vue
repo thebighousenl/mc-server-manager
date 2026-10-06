@@ -10,8 +10,12 @@ const { data } = await useFetch<{ status: keyof typeof labels }>('/api/health')
 const badge = computed(() => labels[data.value?.status ?? 'unavailable'])
 
 async function signOut() {
-  await $fetch('/api/auth/logout', { method: 'POST' })
-  await navigateTo('/login')
+  try {
+    await $fetch('/api/auth/logout', { method: 'POST' })
+  }
+  finally {
+    await navigateTo('/login') // leave even if the session was already gone
+  }
 }
 </script>
 
