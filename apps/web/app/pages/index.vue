@@ -27,6 +27,7 @@ async function signOut() {
     </div>
     <UCard>
       <UBadge :color="badge.color" variant="subtle">{{ badge.text }}</UBadge>
+      <UButton to="/servers" class="ml-2" variant="link">Servers</UButton>
     </UCard>
   </UContainer>
 </template>
