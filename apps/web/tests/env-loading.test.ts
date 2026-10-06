@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadNuxtConfig } from 'nuxt/kit'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { hashPassword, parseUsers, verifyPassword } from '../server/utils/password'
 
 // Regression for #69: the documented flow (hash -> root .env -> `pnpm dev`) must authenticate.
@@ -12,8 +12,13 @@ const dotenvFlag = dev.match(/--dotenv\s+(\S+)/)?.[1] // what `nuxt dev` is told
 
 describe('NUXT_AUTH_USERS from the repo-root .env', () => {
   let root = ''
-  afterEach(() => {
+  const saved = process.env.NUXT_AUTH_USERS // dotenv never overwrites an existing var, so start clean and restore
+  beforeEach(() => {
     delete process.env.NUXT_AUTH_USERS
+  })
+  afterEach(() => {
+    if (saved === undefined) delete process.env.NUXT_AUTH_USERS
+    else process.env.NUXT_AUTH_USERS = saved
     rmSync(root, { recursive: true, force: true })
   })
 
