@@ -18,7 +18,7 @@ function cluster(o: { replicas?: number, output?: string | (() => string), old?:
       result: { stdout: JSON.stringify({ items: [{ kind: 'Deployment', metadata: { name: 'bedrock-zz', labels }, spec: { replicas: o.replicas ?? 1, template: { spec: { containers: [{}] } } } }, ...(o.replicas === 0 ? [] : [pod])] }) },
     },
     { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: '{}' } },
-    { match: a => a[0] === 'logs' && a[1] === 'bedrock-zz-x', result: { stdout: 'Server started.' } },
+    { match: a => a[0] === 'logs' && a[1] === 'pod/bedrock-zz-x', result: { stdout: 'Server started.' } },
     // `old` is already in the log (inside the look-back window) when the command goes out; `output` appears after it.
     { match: a => a[0] === 'logs', result: () => ({ stdout: (o.old ?? '') + (sent ? typeof o.output === 'function' ? o.output() : o.output ?? '' : '') }) },
     { match: a => a[0] === 'exec', result: () => { sent = true; return { stdout: '' } } },

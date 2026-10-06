@@ -21,7 +21,7 @@ async function load(kubectl: Kubectl, opts: ListOpts): Promise<ServerDetail[]> {
   await Promise.all(pods.filter(p => p.metadata.labels?.[NAME_LABEL] === APP_NAME && p.status?.conditions?.some(c => c.type === 'Ready' && c.status === 'True') && !tracker.has(p.metadata.uid!))
     .map(async (p) => {
       try {
-        tracker.check(p.metadata.uid!, (await kubectl.run(['logs', p.metadata.name!, '--tail=2000'])).stdout)
+        tracker.check(p.metadata.uid!, (await kubectl.run(['logs', `pod/${p.metadata.name!}`, '--tail=2000'])).stdout)
       }
       catch (err) {
         if (!(err instanceof KubectlError)) throw err // a pod that vanished meanwhile is just not started yet
