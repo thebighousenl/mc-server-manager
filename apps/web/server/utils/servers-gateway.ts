@@ -14,6 +14,17 @@ export interface GatewayDeps {
 }
 
 const NAME = /^[a-z][a-z0-9-]{1,19}$/
+// Same shape as the manager's validateExportFile.
+const FILE = /^[a-z][a-z0-9-]*-[A-Za-z0-9 _.-]+-\d{8}T\d{6}Z\.tgz$/
+const validFile = (seg: string) => {
+  try {
+    const f = decodeURIComponent(seg)
+    return FILE.test(f) && !f.includes('..')
+  }
+  catch {
+    return false
+  }
+}
 const MAX_BODY = 16 * 1024
 const RESPONSE_HEADERS = ['content-type', 'content-length', 'content-disposition', 'cache-control']
 const json = (status: number, body: object) => Response.json(body, { status })
@@ -24,8 +35,9 @@ function match(method: string, pathname: string): { route: (typeof routes)[numbe
   for (const route of routes) {
     const pat = route.pattern.split('/')
     if (route.method !== method || pat.length !== segs.length) continue
-    if (!pat.every((p, i) => p === ':name' || p === segs[i])) continue
+    if (!pat.every((p, i) => p === ':name' || p === ':file' || p === segs[i])) continue
     if (pat.some((p, i) => p === ':name' && !NAME.test(segs[i]!))) return json(400, { error: 'invalid_name' })
+    if (pat.some((p, i) => p === ':file' && !validFile(segs[i]!))) return json(400, { error: 'invalid_file' })
     return { route, path: segs.join('/').replace(/^\/api/, '') }
   }
   return json(404, { error: 'not_found' })

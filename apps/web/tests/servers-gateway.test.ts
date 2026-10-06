@@ -114,7 +114,7 @@ describe('forward', () => {
   it('404 for unlisted server routes without calling the manager', async () => {
     const { fetch, deps } = gateway()
     expect((await forward(req('/api/servers/daan/unlisted'), deps)).status).toBe(404)
-    expect((await forward(req('/api/servers/daan', { method: 'DELETE' }), deps)).status).toBe(404)
+    expect((await forward(req('/api/servers/daan', { method: 'PATCH' }), deps)).status).toBe(404)
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -176,6 +176,35 @@ describe('forward', () => {
   it('rejects an invalid name on reachability with 400', async () => {
     const { fetch, deps } = gateway()
     expect((await forward(req('/api/servers/Bad_Name/reachability', { method: 'POST' }), deps)).status).toBe(400)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('forwards DELETE /api/servers/:name with its body, and validates the name', async () => {
+    const { fetch, deps } = gateway()
+    await forward(req('/api/servers/zz-test', { method: 'DELETE', body: '{"confirmName":"zz-test"}', contentType: 'application/json' }), deps)
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe('/servers/zz-test')
+    expect(init.method).toBe('DELETE')
+    expect(init.body).toBe('{"confirmName":"zz-test"}')
+    expect((await forward(req('/api/servers/Bad_Name', { method: 'DELETE' }), deps)).status).toBe(400)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards GET /api/exports and streams a valid export file with its download headers', async () => {
+    const { fetch, deps } = gateway(ok('TGZ', { 'content-type': 'application/gzip', 'content-disposition': 'attachment; filename="f"' }))
+    await forward(req('/api/exports'), deps)
+    const res = await forward(req('/api/exports/zz-My%20World-20260102T030405Z.tgz'), deps)
+    expect(fetch.mock.calls[0]![0]).toBe('/exports')
+    expect(fetch.mock.calls[1]![0]).toBe('/exports/zz-My%20World-20260102T030405Z.tgz')
+    expect((fetch.mock.calls[1]![1] as RequestInit).signal).toBeUndefined()
+    expect(res.headers.get('content-type')).toBe('application/gzip')
+    expect(res.headers.get('content-disposition')).toContain('attachment')
+    expect(await res.text()).toBe('TGZ')
+  })
+
+  it.each(['nope.tgz', '..', '%2e%2e', 'ZZ-w-20260102T030405Z.tgz', 'zz-w-20260102T030405Z.tar', 'zz-a..b-20260102T030405Z.tgz', '%zz', 'zz-w%2F-20260102T030405Z.tgz', 'zz-w%00-20260102T030405Z.tgz'])('rejects export file %j with 400 and no manager call', async (file) => {
+    const { fetch, deps } = gateway()
+    expect((await forward(req(`/api/exports/${file}`), deps)).status).toBe(400)
     expect(fetch).not.toHaveBeenCalled()
   })
 
