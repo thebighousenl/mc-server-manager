@@ -22,7 +22,7 @@ export function validatePort(port: unknown, o: { min: number, max: number, taken
 const intIn = (min: number, max: number) => (v: string) => /^\d{1,4}$/.test(v) && +v >= min && +v <= max
 const oneOf = (...values: string[]) => (v: string) => values.includes(v)
 const bool = oneOf('true', 'false')
-const text = (max: number) => (v: string) => v.length >= 1 && v.length <= max && !/[\x00-\x1f\x7f]/.test(v) // eslint-disable-line no-control-regex
+const text = (max: number) => (v: string) => v.length >= 1 && v.length <= max && !/[\x00-\x1f\x7f]/.test(v)
 
 // Allow-list of editable settings (data-model.md, ServerSettings). Everything else is read-only.
 const RULES: Record<string, (v: string) => boolean> = {
