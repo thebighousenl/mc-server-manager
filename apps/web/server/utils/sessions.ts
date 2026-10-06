@@ -23,7 +23,7 @@ export function createSession(username: string, deps: AuthDeps): string {
 const expired = (s: Session, now: number, deps: AuthDeps) =>
   now - s.lastSeenAt > deps.config.idleTimeoutMs || now - s.createdAt > deps.config.maxLifetimeMs
 
-export function getSession(token: string, deps: AuthDeps): { username: string } | { expired: true, username: string } | undefined {
+export function lookupSession(token: string, deps: AuthDeps): { username: string } | { expired: true, username: string } | undefined {
   const s = sessions.get(token)
   if (!s) return undefined
   const now = deps.now()

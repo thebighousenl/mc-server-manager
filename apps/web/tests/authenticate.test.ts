@@ -28,7 +28,7 @@ describe('authenticate', () => {
     expect(r).toMatchObject({ status: 200, username: 'alice' })
     expect(typeof (r as { token: string }).token).toBe('string')
     const sessions = await import('../server/utils/sessions')
-    expect(sessions.getSession((r as { token: string }).token, deps)).toEqual({ username: 'alice' })
+    expect(sessions.lookupSession((r as { token: string }).token, deps)).toEqual({ username: 'alice' })
   })
 
   it('username is matched case-insensitively', async () => {
