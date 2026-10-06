@@ -1,0 +1,21 @@
+// The only browser-callable manager routes. Story PRs add rows; `:name` and `:file` are validated by the gateway.
+export interface ServerRoute { method: string, pattern: string, stream?: boolean }
+
+export const routes: ServerRoute[] = [
+  { method: 'GET', pattern: '/api/servers' },
+  { method: 'POST', pattern: '/api/servers' },
+  { method: 'GET', pattern: '/api/servers/events', stream: true }, // before :name
+  { method: 'GET', pattern: '/api/servers/:name' },
+  { method: 'POST', pattern: '/api/servers/:name/adopt' },
+  { method: 'POST', pattern: '/api/servers/:name/start' },
+  { method: 'POST', pattern: '/api/servers/:name/stop' },
+  { method: 'POST', pattern: '/api/servers/:name/restart' },
+  { method: 'GET', pattern: '/api/servers/:name/logs', stream: true },
+  { method: 'POST', pattern: '/api/servers/:name/command' },
+  { method: 'GET', pattern: '/api/servers/:name/players' },
+  { method: 'PUT', pattern: '/api/servers/:name/settings' },
+  { method: 'POST', pattern: '/api/servers/:name/reachability' },
+  { method: 'DELETE', pattern: '/api/servers/:name' },
+  { method: 'GET', pattern: '/api/exports' },
+  { method: 'GET', pattern: '/api/exports/:file', stream: true }, // large download, no timeout
+]

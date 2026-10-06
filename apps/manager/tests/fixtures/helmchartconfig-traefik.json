@@ -1,0 +1,12 @@
+{
+  "apiVersion": "helm.cattle.io/v1",
+  "kind": "HelmChartConfig",
+  "metadata": {
+    "name": "traefik",
+    "namespace": "kube-system",
+    "resourceVersion": "4242"
+  },
+  "spec": {
+    "valuesContent": "ports:\n  mc-gaitie:\n    port: 19132\n    exposedPort: 19132\n    protocol: UDP\n    expose:\n      default: true\n  mc-daan:\n    port: 19134\n    exposedPort: 19134\n    protocol: UDP\n    expose:\n      default: true\n  mc-kontgat:\n    port: 19140\n    exposedPort: 19140\n    protocol: UDP\n    expose:\n      default: true\n  mc-creative:\n    port: 19232\n    exposedPort: 19232\n    protocol: UDP\n    expose:\n      default: true\n  mc-plaskutje:\n    port: 19332\n    exposedPort: 19332\n    protocol: UDP\n    expose:\n      default: true\n"
+  }
+}

@@ -1,9 +1,10 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 → 1.1.0
-Modified principles: none renamed; IV. Security by Default unchanged
-Added sections: Core Principle VI (Nuxt Server Layer as Sole Gateway)
-Modified sections: Technical Constraints (architecture bullet now names Nuxt 4 server layer)
+Version change: 1.1.0 → 1.1.1
+Modified principles: III. Safe Server Operations (graceful stop wording is no longer Java-specific:
+  `save-all`/`stop` -> the server's own stop path before any forced kill)
+Added sections: none
+Modified sections: none
 Removed sections: none
 Deferred TODOs: none
 -->
@@ -29,7 +30,7 @@ Rationale: lifecycle bugs corrupt worlds; tests are the cheapest safeguard.
 ### III. Safe Server Operations
 Operations that can destroy or corrupt data (delete server, restore backup, overwrite world,
 force-kill) MUST require explicit confirmation in the UI and API. Stop MUST attempt a graceful
-shutdown (`save-all` then `stop`) before any forced kill. World data MUST be backed up before
+shutdown (the server's own stop path) before any forced kill. World data MUST be backed up before
 destructive changes. All file paths derived from user input MUST be validated to stay inside the
 managed servers directory.
 Rationale: player worlds are irreplaceable user data.
@@ -84,4 +85,4 @@ redefined principles, MINOR for added principles or materially expanded guidance
 clarifications. All PRs and reviews MUST verify compliance; violations MUST be justified or
 fixed before merge. Use `README.md` and `.specify/` artifacts for runtime guidance.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-06
+**Version**: 1.1.1 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-06

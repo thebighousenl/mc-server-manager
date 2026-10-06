@@ -25,3 +25,20 @@ export function getManagerStatus() {
   const { managerUrl, managerSecret } = useRuntimeConfig()
   return checkManager(managerUrl, managerSecret)
 }
+
+export class ManagerMisconfigured extends Error {}
+
+// The only code (besides checkManager) that reads managerUrl / managerSecret: calls the manager as an operator.
+export async function managerFetch(
+  path: string,
+  init: RequestInit,
+  operator: string,
+  fetchFn: typeof fetch = fetch,
+  conn: { managerUrl: string, managerSecret: string } = useRuntimeConfig(),
+): Promise<Response> {
+  if (!conn.managerUrl || !conn.managerSecret) throw new ManagerMisconfigured('manager url or secret not set')
+  const headers = new Headers(init.headers)
+  headers.set('Authorization', `Bearer ${conn.managerSecret}`)
+  headers.set('X-Operator', operator)
+  return fetchFn(new URL(path, conn.managerUrl), { ...init, headers })
+}

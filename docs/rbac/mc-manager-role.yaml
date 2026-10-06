@@ -1,0 +1,50 @@
+# Permissions for the manager's kubeconfig identity (specs/003-kubectl-deployment-management/contracts/rbac.md).
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: mc-manager, namespace: minecraft-servers }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: mc-manager, namespace: minecraft-servers }
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, deployments/scale]
+    verbs: [get, list, watch, patch, create, delete]
+  - apiGroups: [""]
+    resources: [pods, pods/log]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [services, persistentvolumeclaims]
+    verbs: [get, list, patch, create, delete]
+  - apiGroups: [traefik.io]
+    resources: [ingressrouteudps]
+    verbs: [get, list, patch, create, delete]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, watch, create, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: mc-manager, namespace: minecraft-servers }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: mc-manager }
+subjects:
+  - { kind: ServiceAccount, name: mc-manager, namespace: minecraft-servers }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: mc-manager-traefik, namespace: kube-system }
+rules:
+  - apiGroups: [helm.cattle.io]
+    resources: [helmchartconfigs]
+    resourceNames: [traefik]
+    verbs: [get, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: mc-manager-traefik, namespace: kube-system }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: mc-manager-traefik }
+subjects:
+  - { kind: ServiceAccount, name: mc-manager, namespace: minecraft-servers }
