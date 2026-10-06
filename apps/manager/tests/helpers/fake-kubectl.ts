@@ -10,6 +10,7 @@ export interface FakeChild extends ChildProcess { killed: boolean }
 
 export function fakeKubectl(rules: FakeRule[]) {
   const calls: string[][] = []
+  const stdins: (string | undefined)[] = [] // stdin per call, same index as calls
   const children: FakeChild[] = []
   const find = (args: string[]) => {
     calls.push(args)
@@ -17,14 +18,17 @@ export function fakeKubectl(rules: FakeRule[]) {
     if (!rule) throw new Error(`fake kubectl: no rule for ${args.join(' ')}`)
     return typeof rule.result === 'function' ? rule.result(args) : rule.result
   }
-  const kubectl: Kubectl & { calls: string[][], children: FakeChild[] } = {
+  const kubectl: Kubectl & { calls: string[][], stdins: (string | undefined)[], children: FakeChild[] } = {
     calls,
+    stdins,
     children,
-    async run(args) {
+    async run(args, opts) {
+      stdins.push(opts?.stdin)
       const r = find(args)
       return { stdout: r.stdout, stderr: r.stderr ?? '', code: r.code ?? 0 }
     },
     spawn(args) {
+      stdins.push(undefined)
       const r = find(args)
       const child = Object.assign(new EventEmitter(), {
         stdout: new PassThrough(),

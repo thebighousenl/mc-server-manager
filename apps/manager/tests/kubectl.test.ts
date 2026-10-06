@@ -124,6 +124,10 @@ describe('namespace and resource guard', () => {
     await refused(['get', 'helmchartconfig', 'other'], { namespace: 'kube-system' })
     await refused(['get', 'pods'], { namespace: 'kube-system' })
     await refused(['delete', 'helmchartconfig', 'traefik'], { namespace: 'kube-system' })
+    await allowed(['replace', '-f', '-'], { namespace: 'kube-system' })
+    await allowed(['apply', '-f', '-', '--dry-run=server'], { namespace: 'kube-system' })
+    await refused(['delete', '-f', '-'], { namespace: 'kube-system' })
+    await refused(['replace', '-f', 'x.yaml'], { namespace: 'kube-system' })
   })
 
   it.each([

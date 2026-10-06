@@ -57,6 +57,8 @@ function guard(args: string[], namespace: string, opts: RunOpts | undefined) {
   const isTraefikConfig = resources.length === 1 && /^helmchartconfigs?(\.helm\.cattle\.io)?(\/traefik)?$/.test(resources[0]!)
     && (positional.includes('traefik') || resources[0]!.endsWith('/traefik') || verb === 'auth')
     && ['get', 'replace', 'apply', 'auth'].includes(verb ?? '')
+    // `replace|apply -f -` names no resource; the object arrives on stdin and RBAC limits it to helmchartconfig/traefik.
+    || (['replace', 'apply'].includes(verb ?? '') && positional.length === 1 && args[args.indexOf('-f') + 1] === '-')
   const namespaces = flagNs.length ? flagNs : [opts?.namespace === undefined ? namespace : (opts.namespace ?? '')]
   for (const ns of namespaces) {
     if (ns !== namespace && !(ns === 'kube-system' && isTraefikConfig)) throw refuse()
