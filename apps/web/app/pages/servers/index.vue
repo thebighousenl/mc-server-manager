@@ -6,7 +6,10 @@ const { servers, clusterOk, error, loaded } = useServers()
   <UContainer class="py-8">
     <div class="mb-4 flex items-center justify-between">
       <h1 class="text-2xl font-bold">Servers</h1>
-      <UButton to="/" color="neutral" variant="outline">Home</UButton>
+      <div class="flex gap-2">
+        <UButton to="/servers/new" data-testid="new-server">New server</UButton>
+        <UButton to="/" color="neutral" variant="outline">Home</UButton>
+      </div>
     </div>
     <UAlert v-if="!clusterOk" class="mb-4" color="error" variant="subtle" title="Cluster unavailable" :description="error" />
     <p v-else-if="loaded && !servers.length" data-testid="no-servers">No servers found.</p>
