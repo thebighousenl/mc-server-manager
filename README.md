@@ -43,9 +43,9 @@ printf %s '<password>' | pnpm --filter web hash-password   # prints scrypt$<salt
 NUXT_AUTH_USERS='[{"username":"alice","passwordHash":"<hash>"}]'
 ```
 
-`pnpm dev` / `pnpm --filter web dev` read the repo-root `.env` (the web dev script passes
-`--dotenv ../../.env`); restart the dev server after editing it. A `.env` in `apps/web` is **not** read by `dev`, and a variable already
-exported in your shell wins over the `.env` value (dotenv never overrides), so `unset NUXT_AUTH_USERS` if edits seem ignored.
+`pnpm dev` / `pnpm --filter web dev` / `pnpm --filter manager dev` read the repo-root `.env` (the web dev script passes
+`--dotenv ../../.env`, the manager's passes `--env-file-if-exists=../../.env`); restart the dev server after editing it. A `.env` in `apps/web` is **not** read by `dev`, and a variable already
+exported in your shell wins over the `.env` value (neither loader overrides), so `unset NUXT_AUTH_USERS` if edits seem ignored.
 Production builds read real environment variables only. If login fails for valid
 credentials, check the server log for `no_operators_configured`.
 
