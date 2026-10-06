@@ -81,6 +81,7 @@ describe('exportWorld', () => {
     const [sh, c, script, ...args] = spec.containers[0].command
     expect([sh, c, ...args]).toEqual(['sh', '-c', 'export', file, 'My World'])
     expect(script).toContain('tar czf "/exports/$1" -C /data/worlds -- "$2"')
+    expect(script).toContain('tar czf "/exports/$1" -C /data/worlds -- .') // another world exists under a different name: export it all
     expect(spec.volumes.map((v: { persistentVolumeClaim: { claimName: string } }) => v.persistentVolumeClaim.claimName).sort()).toEqual(['bedrock-data-zz', 'mc-exports'])
     expect(spec.volumes.find((v: { persistentVolumeClaim: { claimName: string } }) => v.persistentVolumeClaim.claimName === 'bedrock-data-zz').persistentVolumeClaim.readOnly).toBe(true)
     expect(spec.containers[0].volumeMounts.find((m: { mountPath: string }) => m.mountPath === '/data/worlds' || m.mountPath === '/data').readOnly).toBe(true)
@@ -93,7 +94,8 @@ describe('exportWorld', () => {
     const k = cluster({ volume: true, job: 'ok', noWorld: true })
     expect(await exportWorld(deps(k), 'zz', 'My World', 'alice')).toBeNull()
     const script = objs(k)[0].spec.template.spec.containers[0].command[2]
-    expect(script).toContain('[ -d "/data/worlds/$2" ]')
+    // Only an empty /data/worlds is skipped, never just a missing level directory.
+    expect(script).toContain('ls -A /data/worlds')
   })
 
   it.each(['fail', 'never'] as const)('a %s Job is an error, not a partial success, and issues no delete at all', async (job) => {

@@ -7,7 +7,9 @@ const secret = 's'.repeat(32)
 const lines: string[] = []
 const config = { ...loadConfig({ MANAGER_SECRET: secret }), logLevel: 'info', logStream: { write: (m: string) => { lines.push(m) } } }
 const labels = { 'app.kubernetes.io/name': 'bedrock', 'app.kubernetes.io/instance': 'zz', 'mc-manager/managed': 'true', 'mc-manager/server': 'zz' }
-const kubectl = (replicas = 1) => fakeKubectl([
+const kubectl = (replicas = 1) => {
+  let sent = false
+  return fakeKubectl([
   {
     match: a => a[0] === 'get' && a[1] === 'deploy,pods',
     result: {
@@ -21,9 +23,10 @@ const kubectl = (replicas = 1) => fakeKubectl([
   },
   { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: '{}' } },
   { match: a => a[0] === 'logs' && a[1] === 'bedrock-zz-x', result: { stdout: 'Server started.' } },
-  { match: a => a[0] === 'logs', result: { stdout: '[t INFO] There are 1/10 players online:\n[t INFO] Alice\n' } },
-  { match: a => a[0] === 'exec', result: { stdout: '' } },
-])
+  { match: a => a[0] === 'logs', result: () => ({ stdout: sent ? '[t INFO] There are 1/10 players online:\n[t INFO] Alice\n' : '' }) },
+  { match: a => a[0] === 'exec', result: () => { sent = true; return { stdout: '' } } },
+  ])
+}
 const call = (k: ReturnType<typeof kubectl>, method: 'GET' | 'POST', url: string, payload?: unknown) =>
   buildApp(config, { kubectl: k }).inject({ method, url, payload: payload as object, headers: { authorization: `Bearer ${secret}`, 'x-operator': 'alice' } })
 

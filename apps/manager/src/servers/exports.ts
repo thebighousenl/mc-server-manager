@@ -22,6 +22,13 @@ export interface ExportDeps {
 const EXPORTS = 'mc-exports'
 const IMAGE = 'busybox:1.37'
 const NO_WORLD = 'no-world'
+// A missing level directory does not mean the server never ran (LEVEL_NAME may have been edited), so only an
+// empty /data/worlds counts as "nothing to export"; otherwise a missing level exports every world there.
+const EXPORT_SCRIPT = [
+  'if [ -d "/data/worlds/$2" ]; then tar czf "/exports/$1" -C /data/worlds -- "$2"',
+  `elif [ -z "$(ls -A /data/worlds 2>/dev/null)" ]; then echo ${NO_WORLD}`,
+  'else tar czf "/exports/$1" -C /data/worlds -- .; fi',
+].join('; ')
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 const create = (kubectl: Kubectl, obj: object) => kubectl.run(['create', '-f', '-'], { stdin: JSON.stringify(obj) })
 const exists = async (kubectl: Kubectl, ref: string) => (await kubectl.run(['get', ref, '--ignore-not-found', '-o', 'name'])).stdout.trim() !== ''
@@ -60,7 +67,7 @@ export async function ensureExportsVolume({ kubectl, exports }: ExportDeps) {
 }
 
 // The caller holds the server lock. Stopped servers only, so the copy is consistent.
-// Returns null when the server never created the world (it never ran), so there is nothing to export.
+// Returns null when /data/worlds holds no world at all (the server never ran), so there is nothing to export.
 export async function exportWorld(deps: ExportDeps, name: string, level: string, operator: string): Promise<string | null> {
   const { kubectl, logger, timeoutMs = 600_000, pollMs = 2000 } = deps
   const log = (outcome: string, detail?: string) => logAction(logger, { operator, server: name, action: 'export', outcome, detail })
@@ -88,7 +95,7 @@ export async function exportWorld(deps: ExportDeps, name: string, level: string,
               name: 'export',
               image: IMAGE,
               // Level and file are positional arguments, and `--` keeps a level name from being read as a tar option.
-              command: ['sh', '-c', `[ -d "/data/worlds/$2" ] || { echo ${NO_WORLD}; exit 0; }; tar czf "/exports/$1" -C /data/worlds -- "$2"`, 'export', file, level],
+              command: ['sh', '-c', EXPORT_SCRIPT, 'export', file, level],
               volumeMounts: [{ name: 'data', mountPath: '/data', readOnly: true }, { name: 'exports', mountPath: '/exports' }],
             }],
             volumes: [

@@ -31,16 +31,19 @@ async function exec(deps: ConsoleDeps, name: string, command: string, done: (lin
   if (server.state !== 'running') throw new ConsoleError(422, 'server not ready')
   // The kubelet's clock may differ from ours, so start a little early rather than miss the reply.
   const since = new Date(Date.now() - 1000).toISOString()
+  const read = async () => (await kubectl.run(['logs', `deploy/${names(name).deployment}`, `--since-time=${since}`])).stdout.split('\n').filter(l => l.trim())
+  // The log only grows, so what is there before the command is sent is never its answer, look-back window included.
+  const before = (await read()).length
   // Each word is its own argument: no shell is involved anywhere.
   await kubectl.run(['exec', `deploy/${names(name).deployment}`, '--', 'send-command', ...command.split(/\s+/)])
   const deadline = Date.now() + timeoutMs
-  const read = async () => (await kubectl.run(['logs', `deploy/${names(name).deployment}`, `--since-time=${since}`])).stdout.split('\n').filter(l => l.trim())
+  const fresh = async () => (await read()).slice(before)
   const result = (lines: string[]) => ({ command, lines: lines.slice(0, MAX_LINES), truncated: lines.length > MAX_LINES })
   for (;;) {
-    let lines = await read()
+    let lines = await fresh()
     if (done(lines)) {
       await sleep(settleMs)
-      lines = await read()
+      lines = await fresh()
       return result(lines)
     }
     if (Date.now() >= deadline) return result(lines)

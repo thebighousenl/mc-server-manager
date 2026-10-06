@@ -8,8 +8,9 @@ const labels = { 'app.kubernetes.io/name': 'bedrock', 'app.kubernetes.io/instanc
 let n = 0
 
 // Pod UIDs are unique per cluster because the started-tracker is shared.
-function cluster(o: { replicas?: number, output?: string | (() => string) } = {}) {
+function cluster(o: { replicas?: number, output?: string | (() => string), old?: string } = {}) {
   const uid = `console-${n++}`
+  let sent = false
   const pod = { kind: 'Pod', metadata: { name: 'bedrock-zz-x', uid, labels }, status: { conditions: [{ type: 'Ready', status: 'True' }] } }
   return fakeKubectl([
     {
@@ -18,8 +19,9 @@ function cluster(o: { replicas?: number, output?: string | (() => string) } = {}
     },
     { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: '{}' } },
     { match: a => a[0] === 'logs' && a[1] === 'bedrock-zz-x', result: { stdout: 'Server started.' } },
-    { match: a => a[0] === 'logs', result: () => ({ stdout: typeof o.output === 'function' ? o.output() : o.output ?? '' }) },
-    { match: a => a[0] === 'exec', result: { stdout: '' } },
+    // `old` is already in the log (inside the look-back window) when the command goes out; `output` appears after it.
+    { match: a => a[0] === 'logs', result: () => ({ stdout: (o.old ?? '') + (sent ? typeof o.output === 'function' ? o.output() : o.output ?? '' : '') }) },
+    { match: a => a[0] === 'exec', result: () => { sent = true; return { stdout: '' } } },
   ])
 }
 const logs: object[] = []
@@ -33,6 +35,23 @@ describe('sendCommand', () => {
     const k = cluster({ output: () => reads++ === 0 ? '[t INFO] Player connected\n' : '[t INFO] Player connected\n[t INFO] Set the time to 0\n' })
     const res = await sendCommand({ ...deps(k), timeoutMs: 2000, settleMs: 5 }, 'zz', 'time set day', o)
     expect(res.lines).toEqual(['[t INFO] Player connected', '[t INFO] Set the time to 0'])
+  })
+
+  it('does not mistake a line from just before the command for its answer', async () => {
+    const k = cluster({ old: '[t INFO] Player connected\n' }) // nothing new ever arrives
+    const res = await sendCommand({ ...deps(k), settleMs: 1 }, 'zz', 'time set day', o)
+    expect(res.lines).toEqual([])
+  })
+
+  it('returns only the new lines when an old one sits in the look-back window', async () => {
+    const k = cluster({ old: '[t INFO] Player connected\n', output: '[t INFO] Set the time to 0\n' })
+    const res = await sendCommand({ ...deps(k), settleMs: 1 }, 'zz', 'time set day', o)
+    expect(res.lines).toEqual(['[t INFO] Set the time to 0'])
+  })
+
+  it('getPlayers ignores a stale list answer from just before', async () => {
+    const k = cluster({ old: '[t INFO] There are 3/10 players online:\n[t INFO] a, b, c\n', output: '[t INFO] There are 0/10 players online:\n' })
+    expect(await getPlayers({ ...deps(k), settleMs: 1 }, 'zz')).toEqual({ online: 0, max: 10, players: [] })
   })
 
   it('reads the log from slightly before the command to survive clock skew', async () => {
