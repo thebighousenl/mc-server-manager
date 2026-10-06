@@ -65,6 +65,11 @@ describe('forward', () => {
     expect(await res.json()).toEqual({ error: 'unavailable' })
   })
 
+  it('manager 502 keeps its message so the operator sees what failed', async () => {
+    const deps = { managerFetch: async () => Response.json({ error: 'unavailable', message: 'permission denied by the cluster' }, { status: 502 }) }
+    expect(await (await forward(req('/api/servers'), deps)).json()).toEqual({ error: 'unavailable', message: 'permission denied by the cluster' })
+  })
+
   it('manager 401 (bad shared secret) becomes 502 unavailable, not a logout', async () => {
     const { deps } = gateway(ok('{}', undefined, 401))
     expect((await forward(req('/api/servers'), deps)).status).toBe(502)

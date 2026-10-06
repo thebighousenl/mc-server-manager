@@ -60,13 +60,13 @@ async function check() {
   </div>
   <div v-else>
     <div class="mb-2 grid grid-cols-3 items-center gap-2 text-sm">
-      <label for="create-name">name</label>
-      <UInput id="create-name" v-model="name" data-testid="name" class="col-span-2" />
+      <label for="create-name">name (required)</label>
+      <UInput id="create-name" v-model="name" data-testid="name" placeholder="2-20 lowercase letters, digits or dashes" class="col-span-2" />
       <label for="create-port">port (optional)</label>
-      <UInput id="create-port" v-model="port" data-testid="port" class="col-span-2" />
+      <UInput id="create-port" v-model="port" data-testid="port" placeholder="19132-19999, empty = next free" class="col-span-2" />
       <template v-for="(_, key) in FIELDS" :key="key">
-        <label :for="`create-${key}`" class="font-mono">{{ key }}</label>
-        <UInput :id="`create-${key}`" v-model="values[key]" :data-testid="`setting-${key}`" class="col-span-2" />
+        <label :for="`create-${key}`" class="font-mono">{{ key }} (optional)</label>
+        <UInput :id="`create-${key}`" v-model="values[key]" :data-testid="`setting-${key}`" :placeholder="`${FIELDS[key]![1]}; empty = default`" class="col-span-2" />
       </template>
     </div>
     <UAlert v-for="e in errors" :key="e" class="mt-2" color="error" variant="subtle" :title="e" />

@@ -100,6 +100,7 @@ export function createKubectl(config: Config, execFileImpl: typeof execFile = ex
           if (typeof e.code === 'number' && !stderr) return resolve({ stdout, stderr, code: e.code })
           reject(new KubectlError(classify(stderr)))
         })
+        child.stdin?.on('error', () => {}) // kubectl may exit before reading stdin (EPIPE); the exit callback reports the failure
         child.stdin?.end(opts?.stdin ?? '')
       })
     },
