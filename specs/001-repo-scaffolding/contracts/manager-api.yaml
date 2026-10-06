@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Manager API (internal)
+  version: 0.1.0
+  description: Internal API; callable only by the Nuxt server layer.
+security:
+  - bearer: []
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, uptimeSeconds]
+                properties:
+                  status: { type: string, enum: [ok] }
+                  uptimeSeconds: { type: number }
+        "401":
+          description: Missing or invalid shared secret
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error: { type: string, example: unauthorized }
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer

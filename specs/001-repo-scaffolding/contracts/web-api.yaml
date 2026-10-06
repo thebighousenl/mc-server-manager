@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Web server-layer API (browser-facing)
+  version: 0.1.0
+paths:
+  /api/health:
+    get:
+      summary: Back-end health as seen through the Nuxt server layer
+      responses:
+        "200":
+          description: Always 200; state in body (no upstream detail leaked)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unavailable, unauthorized, misconfigured]
