@@ -46,7 +46,7 @@ describe('listServers with the tracker', () => {
     const first = await listServers(k, { tracker })
     expect(first.servers.find(s => s.name === 'daan')!.state).toBe('running')
     expect(logCalls(k).length).toBeGreaterThan(0)
-    expect(logCalls(k)[0]).toEqual(['logs', 'bedrock-daan-abc12', '--tail=2000'])
+    expect(logCalls(k)[0]).toEqual(['logs', 'pod/bedrock-daan-abc12', '--tail=2000'])
     const before = logCalls(k).length
     await listServers(k, { tracker })
     expect(logCalls(k)).toHaveLength(before)

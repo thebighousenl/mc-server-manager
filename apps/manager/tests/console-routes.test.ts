@@ -22,7 +22,7 @@ const kubectl = (replicas = 1) => {
     },
   },
   { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: '{}' } },
-  { match: a => a[0] === 'logs' && a[1] === 'bedrock-zz-x', result: { stdout: 'Server started.' } },
+  { match: a => a[0] === 'logs' && a[1] === 'pod/bedrock-zz-x', result: { stdout: 'Server started.' } },
   { match: a => a[0] === 'logs', result: () => ({ stdout: sent ? '[t INFO] There are 1/10 players online:\n[t INFO] Alice\n' : '' }) },
   { match: a => a[0] === 'exec', result: () => { sent = true; return { stdout: '' } } },
   ])
