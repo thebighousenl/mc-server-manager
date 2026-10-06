@@ -5,4 +5,5 @@ export const routes: ServerRoute[] = [
   { method: 'GET', pattern: '/api/servers' },
   { method: 'GET', pattern: '/api/servers/events', stream: true }, // before :name
   { method: 'GET', pattern: '/api/servers/:name' },
+  { method: 'POST', pattern: '/api/servers/:name/adopt' },
 ]

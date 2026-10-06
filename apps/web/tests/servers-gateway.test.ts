@@ -118,6 +118,14 @@ describe('forward', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('forwards POST /api/servers/:name/adopt with its body', async () => {
+    const { fetch, deps } = gateway()
+    await forward(req('/api/servers/zz-test/adopt', { method: 'POST', body: '{"confirm":false}', contentType: 'application/json' }), deps)
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe('/servers/zz-test/adopt')
+    expect(init.body).toBe('{"confirm":false}')
+  })
+
   describe(':name routes', () => {
     const withNameRoute = async (fn: () => Promise<void>) => {
       const { routes } = await import('../server/utils/servers-routes')
