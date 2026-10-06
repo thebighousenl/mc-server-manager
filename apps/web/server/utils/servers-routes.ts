@@ -12,4 +12,5 @@ export const routes: ServerRoute[] = [
   { method: 'GET', pattern: '/api/servers/:name/logs', stream: true },
   { method: 'POST', pattern: '/api/servers/:name/command' },
   { method: 'GET', pattern: '/api/servers/:name/players' },
+  { method: 'PUT', pattern: '/api/servers/:name/settings' },
 ]

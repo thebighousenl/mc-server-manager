@@ -153,6 +153,15 @@ describe('forward', () => {
     expect(fetch.mock.calls[1]![0]).toBe('/servers/zz-test/players')
   })
 
+  it('forwards PUT settings with its body', async () => {
+    const { fetch, deps } = gateway()
+    await forward(req('/api/servers/zz-test/settings', { method: 'PUT', body: '{"confirm":true}', contentType: 'application/json' }), deps)
+    const [path, init] = fetch.mock.calls[0]! as [string, RequestInit]
+    expect(path).toBe('/servers/zz-test/settings')
+    expect(init.method).toBe('PUT')
+    expect(init.body).toBe('{"confirm":true}')
+  })
+
   describe(':name routes', () => {
     const withNameRoute = async (fn: () => Promise<void>) => {
       const { routes } = await import('../server/utils/servers-routes')
