@@ -4,6 +4,7 @@ import type { Config } from './config.js'
 import type { Kubectl } from './kube/kubectl.js'
 import { healthRoutes } from './routes/health.js'
 import { adoptRoutes } from './routes/adopt.js'
+import { consoleRoutes } from './routes/console.js'
 import { eventsRoutes } from './routes/events.js'
 import { lifecycleRoutes } from './routes/lifecycle.js'
 import { logsRoutes } from './routes/logs.js'
@@ -33,5 +34,6 @@ export function buildApp(config: Config & { logLevel?: string, logStream?: { wri
   adoptRoutes(app, deps)
   lifecycleRoutes(app, deps)
   logsRoutes(app, deps)
+  consoleRoutes(app, deps)
   return app
 }
