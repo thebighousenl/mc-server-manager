@@ -7,6 +7,7 @@ import { adoptRoutes } from './routes/adopt.js'
 import { createRoutes } from './routes/create.js'
 import { consoleRoutes } from './routes/console.js'
 import { eventsRoutes } from './routes/events.js'
+import { deleteRoutes } from './routes/delete.js'
 import { exportsRoutes } from './routes/exports.js'
 import { lifecycleRoutes } from './routes/lifecycle.js'
 import { logsRoutes } from './routes/logs.js'
@@ -41,5 +42,6 @@ export function buildApp(config: Config & { logLevel?: string, logStream?: { wri
   settingsRoutes(app, deps)
   createRoutes(app, config, deps)
   exportsRoutes(app, deps)
+  deleteRoutes(app, config, deps)
   return app
 }
