@@ -19,7 +19,7 @@ export interface LifecycleDeps {
 interface Opts { operator: string, confirm?: boolean }
 export interface LifecycleResult { server: string, warnings: string[] }
 
-const LATEST_WARNING = 'VERSION is LATEST: the newest server version is pulled on start and may irreversibly upgrade the world.'
+export const LATEST_WARNING = 'VERSION is LATEST: the newest server version is pulled on start and may irreversibly upgrade the world.'
 
 // Shared by every mutating action: validate, take the lock, refuse unmanaged servers, log exactly one record.
 function act(action: string, needsConfirm: boolean, body: (d: LifecycleDeps, name: string, desired: 'running' | 'stopped') => Promise<void>) {

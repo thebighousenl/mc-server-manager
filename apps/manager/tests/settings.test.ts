@@ -89,7 +89,7 @@ describe('updateSettings', () => {
     await expect(run(cluster({ replicas: 0 }), { LEVEL_NAME: 'older' })).rejects.toMatchObject({ status: 422 })
   })
 
-  it('refuses unmanaged servers and takes the per-server lock', async () => {
+  it('refuses unmanaged servers', async () => {
     await expect(run(cluster({ managed: false }), { MAX_PLAYERS: '20' })).rejects.toThrow(/adopt/)
   })
 })
