@@ -1,2 +1,6 @@
-.claude/
-.specify/
+node_modules
+.env
+.nuxt
+.output
+dist
+coverage
