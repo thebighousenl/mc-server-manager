@@ -78,6 +78,7 @@ export async function exportWorld(deps: ExportDeps, name: string, level: string,
       metadata: { name: job, labels: { 'mc-manager/server': name } },
       spec: {
         backoffLimit: 0,
+        ttlSecondsAfterFinished: 3600, // a failed Job stays an hour for diagnosis, then goes away by itself
         template: {
           spec: {
             restartPolicy: 'Never',
@@ -95,19 +96,15 @@ export async function exportWorld(deps: ExportDeps, name: string, level: string,
         },
       },
     })
-    try {
-      const deadline = Date.now() + timeoutMs
-      for (;;) {
-        const status = JSON.parse((await kubectl.run(['get', `job/${job}`, '-o', 'json'])).stdout).status ?? {}
-        if (status.succeeded) break
-        if (status.failed) throw new ExportError(409, `exporting ${level} failed`)
-        if (Date.now() > deadline) throw new ExportError(409, `exporting ${level} timed out`)
-        await sleep(pollMs)
-      }
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const status = JSON.parse((await kubectl.run(['get', `job/${job}`, '-o', 'json'])).stdout).status ?? {}
+      if (status.succeeded) break
+      if (status.failed) throw new ExportError(409, `exporting ${level} failed`)
+      if (Date.now() > deadline) throw new ExportError(409, `exporting ${level} timed out`)
+      await sleep(pollMs)
     }
-    finally {
-      await kubectl.run(['delete', `job/${job}`]).catch(() => {}) // the file stays; only the one-off Job goes
-    }
+    await kubectl.run(['delete', `job/${job}`]).catch(() => {}) // the file stays; only the finished Job goes
     log('ok', file)
     return file
   }

@@ -56,8 +56,8 @@ export const restartServer = act('restart', true, async ({ kubectl }, name) => {
   await kubectl.run(['rollout', 'restart', `deploy/${names(name).deployment}`])
 })
 
-// Graceful only: scale to 0 and wait for the pod to exit on its own.
-export const stopServer = act('stop', true, async ({ kubectl, timeoutMs = 90_000, pollMs = 1000 }, name) => {
+// Graceful only: scale to 0 and wait for the pod to exit on its own. Callers hold the server lock.
+export async function scaleDownAndWait(kubectl: Kubectl, name: string, timeoutMs = 90_000, pollMs = 1000) {
   await kubectl.run(['scale', `deploy/${names(name).deployment}`, '--replicas=0'])
   const deadline = Date.now() + timeoutMs
   for (;;) {
@@ -66,4 +66,6 @@ export const stopServer = act('stop', true, async ({ kubectl, timeoutMs = 90_000
     if (Date.now() > deadline) throw new LifecycleError(409, `${name} is still stopping after ${Math.round(timeoutMs / 1000)}s; check it`)
     await sleep(pollMs)
   }
-})
+}
+
+export const stopServer = act('stop', true, ({ kubectl, timeoutMs, pollMs }, name) => scaleDownAndWait(kubectl, name, timeoutMs, pollMs))

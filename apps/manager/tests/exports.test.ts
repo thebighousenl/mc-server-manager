@@ -86,10 +86,10 @@ describe('exportWorld', () => {
     expect(logs.filter((l: any) => l.action === 'export' && l.outcome === 'ok')).toHaveLength(1) // eslint-disable-line @typescript-eslint/no-explicit-any
   })
 
-  it.each(['fail', 'never'] as const)('a %s Job is an error, not a partial success, and the Job is still removed', async (job) => {
+  it.each(['fail', 'never'] as const)('a %s Job is an error, not a partial success, and issues no delete at all', async (job) => {
     const k = cluster({ volume: true, job })
     await expect(exportWorld(deps(k), 'zz', 'zz', 'alice')).rejects.toMatchObject({ status: 409 })
-    expect(k.calls.some(a => a[0] === 'delete' && a[1]!.startsWith('job/'))).toBe(true)
+    expect(k.calls.some(a => a[0] === 'delete')).toBe(false)
   })
 
   it('creates the exports volume first when missing', async () => {
