@@ -1,11 +1,13 @@
 import type { Kubectl } from '../kube/kubectl.js'
 import { KubectlError } from '../kube/kubectl.js'
 import { readTraefikPorts } from '../kube/traefik-read.js'
+import { APP_NAME, NAME_LABEL } from '../kube/objects.js'
 import { deriveServers, type Deployment, type Pod, type Server, type ServerDetail } from '../kube/state.js'
+import { startedTracker, type StartedTracker } from './ready.js'
 import { validateName } from './validate.js'
 
 export interface ListResult { servers: Server[], clusterOk: boolean, error?: string }
-export interface ListOpts { serverStarted?: (podUid: string) => boolean }
+export interface ListOpts { tracker?: StartedTracker }
 
 async function load(kubectl: Kubectl, opts: ListOpts): Promise<ServerDetail[]> {
   const [{ stdout }, traefikPorts] = await Promise.all([
@@ -13,10 +15,22 @@ async function load(kubectl: Kubectl, opts: ListOpts): Promise<ServerDetail[]> {
     readTraefikPorts(kubectl),
   ])
   const items: { kind: string }[] = JSON.parse(stdout).items
+  const pods = items.filter(i => i.kind === 'Pod') as unknown as Pod[]
+  const tracker = opts.tracker ?? startedTracker
+  // Only Ready pods not yet seen started cost a `logs` call; tracked UIDs are free.
+  await Promise.all(pods.filter(p => p.metadata.labels?.[NAME_LABEL] === APP_NAME && p.status?.conditions?.some(c => c.type === 'Ready' && c.status === 'True') && !tracker.has(p.metadata.uid!))
+    .map(async (p) => {
+      try {
+        tracker.check(p.metadata.uid!, (await kubectl.run(['logs', p.metadata.name!, '--tail=2000'])).stdout)
+      }
+      catch (err) {
+        if (!(err instanceof KubectlError)) throw err // a pod that vanished meanwhile is just not started yet
+      }
+    }))
   return deriveServers(
     items.filter(i => i.kind === 'Deployment') as unknown as Deployment[],
-    items.filter(i => i.kind === 'Pod') as unknown as Pod[],
-    { traefikPorts, serverStarted: opts.serverStarted ?? (() => true) },
+    pods,
+    { traefikPorts, serverStarted: uid => tracker.has(uid) },
   )
 }
 

@@ -8,6 +8,7 @@ const config = { ...loadConfig({ MANAGER_SECRET: secret }), logLevel: 'silent' }
 const items = [...fixture('deploy-list').items, ...fixture('pods-running').items]
 const kubectl = fakeKubectl([
   { match: a => a[1] === 'deploy,pods', result: { stdout: JSON.stringify({ items }) } },
+  { match: a => a[0] === 'logs', result: { stdout: 'Server started.' } },
   { match: a => a[1] === 'helmchartconfig', result: { stdout: JSON.stringify({ spec: { valuesContent: 'ports: {}' } }) } },
 ])
 

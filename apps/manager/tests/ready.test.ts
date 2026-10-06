@@ -44,7 +44,7 @@ describe('listServers with the tracker', () => {
     const tracker = createStartedTracker()
     const k = cluster('Server started.\n')
     const first = await listServers(k, { tracker })
-    expect(first.servers.every(s => s.state === 'running')).toBe(true)
+    expect(first.servers.find(s => s.name === 'daan')!.state).toBe('running')
     expect(logCalls(k).length).toBeGreaterThan(0)
     expect(logCalls(k)[0]).toEqual(['logs', 'bedrock-daan-abc12', '--tail=2000'])
     const before = logCalls(k).length
@@ -55,7 +55,7 @@ describe('listServers with the tracker', () => {
   it('stays starting while the log has no Server started. line, and keeps asking', async () => {
     const tracker = createStartedTracker()
     const k = cluster(STARTUP)
-    expect((await listServers(k, { tracker })).servers.every(s => s.state === 'starting')).toBe(true)
+    expect((await listServers(k, { tracker })).servers.find(s => s.name === 'daan')!.state).toBe('starting')
     const before = logCalls(k).length
     await listServers(k, { tracker })
     expect(logCalls(k).length).toBe(before * 2)

@@ -10,6 +10,7 @@ const items = [...fixture('deploy-list').items, ...fixture('pods-running').items
 const traefik = JSON.stringify({ spec: { valuesContent: 'ports:\n  mc-daan:\n    exposedPort: 19132\n' } })
 const cluster = () => fakeKubectl([
   { match: a => a[1] === 'deploy,pods', result: { stdout: JSON.stringify({ items }) } },
+  { match: a => a[0] === 'logs', result: { stdout: 'Server started.' } },
   { match: a => a[1] === 'helmchartconfig', result: { stdout: traefik } },
 ])
 const down = () => fakeKubectl([{ match: () => true, result: () => { throw new KubectlError('unreachable') } }])

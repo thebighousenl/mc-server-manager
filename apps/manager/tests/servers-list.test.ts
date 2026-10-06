@@ -11,6 +11,7 @@ const traefik = JSON.stringify({ spec: { valuesContent } })
 
 const cluster = () => fakeKubectl([
   { match: a => a[0] === 'get' && a[1] === 'deploy,pods', result: { stdout: JSON.stringify({ items }) } },
+  { match: a => a[0] === 'logs', result: { stdout: 'Server started.' } },
   { match: a => a[0] === 'get' && a[1] === 'helmchartconfig', result: { stdout: traefik } },
 ])
 
@@ -18,7 +19,7 @@ describe('listServers', () => {
   it('makes one workload call and one traefik call and returns the five servers', async () => {
     const kubectl = cluster()
     const res = await listServers(kubectl)
-    expect(kubectl.calls).toHaveLength(2)
+    expect(kubectl.calls.filter(a => a[0] !== 'logs')).toHaveLength(2)
     expect(kubectl.calls.filter(a => a[1] === 'deploy,pods')).toHaveLength(1)
     expect(kubectl.calls).toContainEqual(['get', 'helmchartconfig', 'traefik', '-n', 'kube-system', '-o', 'json'])
     expect(res.clusterOk).toBe(true)
