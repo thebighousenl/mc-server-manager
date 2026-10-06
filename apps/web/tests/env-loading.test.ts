@@ -3,8 +3,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadNuxtConfig } from 'nuxt/kit'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { hashPassword, parseUsers, verifyPassword } from '../server/utils/password'
+import { managerFetch } from '../server/utils/manager'
+import { forward } from '../server/utils/servers-gateway'
 
 // Regression for #69: the documented flow (hash -> root .env -> `pnpm dev`) must authenticate.
 const dev = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).scripts.dev as string
@@ -35,5 +37,22 @@ describe('NUXT_AUTH_USERS from the repo-root .env', () => {
     const users = parseUsers(process.env.NUXT_AUTH_USERS ?? '')
     expect(users).toHaveLength(1)
     expect(await verifyPassword('dev', users[0]!.passwordHash)).toBe(true)
+  })
+})
+
+// Missing NUXT_MANAGER_URL / NUXT_MANAGER_SECRET must surface as a 502 from the gateway, not a crash.
+describe('gateway without manager config', () => {
+  it.each([
+    ['url', { managerUrl: '', managerSecret: 's'.repeat(32) }],
+    ['secret', { managerUrl: 'http://manager.internal:3001', managerSecret: '' }],
+  ])('missing %s -> 502 misconfigured, no fetch', async (_n, conn) => {
+    const fetchFn = vi.fn()
+    const res = await forward(
+      { method: 'GET', path: '/api/servers', operator: 'alice' },
+      { managerFetch: (p, init, op) => managerFetch(p, init, op, fetchFn as never, conn) },
+    )
+    expect(res.status).toBe(502)
+    expect(await res.json()).toEqual({ error: 'misconfigured' })
+    expect(fetchFn).not.toHaveBeenCalled()
   })
 })
