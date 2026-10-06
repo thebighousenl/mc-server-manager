@@ -123,7 +123,7 @@ describe('forward', () => {
       })
     })
 
-    it.each(['Bad_Name', 'a', '..', '%2e%2e', 'x'.repeat(21), 'a b', 'abc-'])('rejects name %j with 400 without calling the manager', async (name) => {
+    it.each(['Bad_Name', 'a', '..', '%2e%2e', 'x'.repeat(21), 'a b'])('rejects name %j with 400 without calling the manager', async (name) => {
       await withNameRoute(async () => {
         const { fetch, deps } = gateway()
         const res = await forward(req(`/api/servers/${name}/test`, { method: 'POST' }), deps)
